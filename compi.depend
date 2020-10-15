@@ -1,0 +1,390 @@
+# depslib dependency file v1.0
+1602752049 source:/home/pi/log/src/log.cpp
+	"log.h"
+	<iostream>
+
+1602752128 /home/pi/log/include/log.h
+	<iostream>
+	<sstream>
+	<string>
+	<memory>
+	<map>
+
+1602773736 source:/home/pi/compi/main.cpp
+	<iostream>
+	"log.h"
+	<signal.h>
+	"compi.h"
+	"agentthread.h"
+
+1602751087 source:/home/pi/compi/hash.cpp
+	"hash.h"
+	"audiophash.h"
+	<thread>
+	"log.h"
+	"kiss_xcorr.h"
+
+1602687341 /home/pi/compi/hash.h
+	"fft.h"
+	<map>
+	<vector>
+	<deque>
+
+1602500814 /home/pi/pHash/src/audiophash.h
+	<limits.h>
+	<math.h>
+	<stdlib.h>
+	<unistd.h>
+	<algorithm>
+	<string.h>
+	"ph_fft.h"
+
+1602499241 /home/pi/pHash/src/pHash.h
+	<limits.h>
+	<math.h>
+	<dirent.h>
+	<unistd.h>
+	<errno.h>
+	<sys/types.h>
+	<sys/stat.h>
+	<sys/mman.h>
+	<fcntl.h>
+	<string.h>
+	<stdio.h>
+	<stdlib.h>
+	<stdint.h>
+	"CImg.h"
+	<pthread.h>
+	<sys/param.h>
+	<sys/sysctl.h>
+
+1602497395 /home/pi/pHash/src/ph_fft.h
+	<complex.h>
+	<math.h>
+	<stdlib.h>
+
+1602497395 source:/home/pi/pHash/src/ph_fft.cpp
+	"ph_fft.h"
+
+1602500814 source:/home/pi/pHash/src/audiophash.cpp
+	"audiophash.h"
+	<samplerate.h>
+	<sndfile.h>
+	<mpg123.h>
+
+1602674860 source:/home/pi/compi/audiophash.cpp
+	"audiophash.h"
+	<samplerate.h>
+	<sndfile.h>
+	<mpg123.h>
+
+1602674860 /home/pi/compi/audiophash.h
+	<limits.h>
+	<math.h>
+	<stdlib.h>
+	<unistd.h>
+	<algorithm>
+	<string.h>
+	"ph_fft.h"
+
+1602501377 /home/pi/compi/ph_fft.h
+	<complex.h>
+	<math.h>
+	<stdlib.h>
+
+1602501377 source:/home/pi/compi/ph_fft.cpp
+	"ph_fft.h"
+
+1602751028 source:/home/pi/compi/recorder.cpp
+	"recorder.h"
+	<iostream>
+	<iomanip>
+	<sstream>
+	"log.h"
+	<thread>
+	"hash.h"
+
+1602685355 /home/pi/compi/recorder.h
+	"portaudio.h"
+	<string>
+	<deque>
+	<chrono>
+	<atomic>
+	<mutex>
+	<condition_variable>
+
+1602770694 source:/home/pi/compi/inimanager.cpp
+	"inimanager.h"
+	"inisection.h"
+	<sstream>
+	"log.h"
+
+1602770665 /home/pi/compi/inimanager.h
+	<map>
+	<string>
+	<stdio.h>
+	<iostream>
+	<fstream>
+
+1602770522 /home/pi/compi/inisection.h
+	<map>
+	<string>
+
+1602579037 source:/home/pi/compi/logtofile.cpp
+	"logtofile.h"
+	"utils.h"
+	<syslog.h>
+	<chrono>
+	<iomanip>
+
+1602579031 /home/pi/compi/logtofile.h
+	"log.h"
+	<string>
+	<fstream>
+
+1602579059 /home/pi/compi/utils.h
+	<string>
+	<vector>
+	<sys/stat.h>
+	<chrono>
+	<queue>
+
+1602770564 source:/home/pi/compi/inisection.cpp
+	"inisection.h"
+	<iostream>
+	<fstream>
+	<cstdlib>
+	"log.h"
+
+1602579051 source:/home/pi/compi/utils.cpp
+	<sstream>
+	<sys/types.h>
+	<unistd.h>
+	<iostream>
+	<iomanip>
+	<string.h>
+	<syslog.h>
+	"utils.h"
+	<sys/socket.h>
+	<sys/ioctl.h>
+	<net/if.h>
+	<netinet/ip.h>
+	<arpa/inet.h>
+	<algorithm>
+
+1602750693 /home/pi/compi/agentthread.h
+	<mutex>
+	<set>
+
+1602768912 source:/home/pi/compi/agentthread.cpp
+	"agentthread.h"
+	<agent_pp/agent++.h>
+	<agent_pp/snmp_group.h>
+	<agent_pp/system_group.h>
+	<agent_pp/snmp_target_mib.h>
+	<agent_pp/snmp_notification_mib.h>
+	<agent_pp/notification_originator.h>
+	<agent_pp/mib_complex_entry.h>
+	<agent_pp/v3_mib.h>
+	<agent_pp/vacm.h>
+	<snmp_pp/oid_def.h>
+	<snmp_pp/mp_v3.h>
+	<snmp_pp/log.h>
+	<thread>
+	<sstream>
+	"log.h"
+	<iomanip>
+
+1602596550 /home/pi/compi/fft.h
+	<complex>
+	<valarray>
+
+1602596550 source:/home/pi/compi/fft.cpp
+	"fft.h"
+	<valarray>
+	<iostream>
+
+1602668386 source:/home/pi/compi/kiss_fft.c
+	"_kiss_fft_guts.h"
+
+1602668389 /home/pi/compi/_kiss_fft_guts.h
+	"kiss_fft.h"
+	<limits.h>
+	<alloca.h>
+
+1602668389 /home/pi/compi/kiss_fft.h
+	<stdlib.h>
+	<stdio.h>
+	<math.h>
+	<string.h>
+	<xmmintrin.h>
+	<sys/types.h>
+
+1602668399 source:/home/pi/compi/kiss_xcorr.c
+	<stdlib.h>
+	"kiss_xcorr.h"
+	"_kiss_fft_guts.h"
+
+1602668399 /home/pi/compi/kiss_xcorr.h
+	<stdlib.h>
+	"kiss_fftndr.h"
+
+1602668447 /home/pi/compi/kiss_fftndr.h
+	"kiss_fft.h"
+	"kiss_fftr.h"
+	"kiss_fftnd.h"
+
+1602668447 /home/pi/compi/kiss_fftr.h
+	"kiss_fft.h"
+
+1602668447 /home/pi/compi/kiss_fftnd.h
+	"kiss_fft.h"
+
+1602668445 source:/home/pi/compi/kfc.c
+	"kfc.h"
+
+1602668447 /home/pi/compi/kfc.h
+	"kiss_fft.h"
+
+1602668445 source:/home/pi/compi/kiss_fastfir.c
+	"_kiss_fft_guts.h"
+	"kiss_fftr.h"
+	<unistd.h>
+	<sys/types.h>
+	<sys/mman.h>
+	<assert.h>
+
+1602668445 source:/home/pi/compi/kiss_fftnd.c
+	"kiss_fftnd.h"
+	"_kiss_fft_guts.h"
+
+1602668445 source:/home/pi/compi/kiss_fftndr.c
+	"kiss_fftndr.h"
+	"_kiss_fft_guts.h"
+
+1602668445 source:/home/pi/compi/kiss_fftr.c
+	"kiss_fftr.h"
+	"_kiss_fft_guts.h"
+
+1602682955 /home/pi/compi/threadpool.h
+	<mutex>
+	<thread>
+	<queue>
+	<functional>
+	<condition_variable>
+	<future>
+
+1602770467 source:/home/pi/compi/compi.cpp
+	"compi.h"
+	"agentthread.h"
+	"recorder.h"
+	"log.h"
+	"inisection.h"
+	"logtofile.h"
+	"hash.h"
+
+1602770393 /home/pi/compi/compi.h
+	<memory>
+	"inimanager.h"
+	"hash.h"
+
+1602668445 source:/home/pi/compi/external/kiss/kfc.c
+	"kfc.h"
+
+1602668447 /home/pi/compi/external/kiss/kfc.h
+	"kiss_fft.h"
+
+1602668389 /home/pi/compi/external/kiss/kiss_fft.h
+	<stdlib.h>
+	<stdio.h>
+	<math.h>
+	<string.h>
+	<xmmintrin.h>
+	<sys/types.h>
+
+1602668386 source:/home/pi/compi/external/kiss/kiss_fft.c
+	"_kiss_fft_guts.h"
+
+1602668389 /home/pi/compi/external/kiss/_kiss_fft_guts.h
+	"kiss_fft.h"
+	<limits.h>
+	<alloca.h>
+
+1602668445 source:/home/pi/compi/external/kiss/kiss_fftnd.c
+	"kiss_fftnd.h"
+	"_kiss_fft_guts.h"
+
+1602668447 /home/pi/compi/external/kiss/kiss_fftnd.h
+	"kiss_fft.h"
+
+1602668445 source:/home/pi/compi/external/kiss/kiss_fftndr.c
+	"kiss_fftndr.h"
+	"_kiss_fft_guts.h"
+
+1602668447 /home/pi/compi/external/kiss/kiss_fftndr.h
+	"kiss_fft.h"
+	"kiss_fftr.h"
+	"kiss_fftnd.h"
+
+1602668447 /home/pi/compi/external/kiss/kiss_fftr.h
+	"kiss_fft.h"
+
+1602668445 source:/home/pi/compi/external/kiss/kiss_fftr.c
+	"kiss_fftr.h"
+	"_kiss_fft_guts.h"
+
+1602668399 source:/home/pi/compi/external/kiss/kiss_xcorr.c
+	<stdlib.h>
+	"kiss_xcorr.h"
+	"_kiss_fft_guts.h"
+
+1602668399 /home/pi/compi/external/kiss/kiss_xcorr.h
+	<stdlib.h>
+	"kiss_fftndr.h"
+
+1602674860 source:/home/pi/compi/external/phash/audiophash.cpp
+	"audiophash.h"
+	<samplerate.h>
+	<sndfile.h>
+	<mpg123.h>
+
+1602674860 /home/pi/compi/external/phash/audiophash.h
+	<limits.h>
+	<math.h>
+	<stdlib.h>
+	<unistd.h>
+	<algorithm>
+	<string.h>
+	"ph_fft.h"
+
+1602501377 /home/pi/compi/external/phash/ph_fft.h
+	<complex.h>
+	<math.h>
+	<stdlib.h>
+
+1602501377 source:/home/pi/compi/external/phash/ph_fft.cpp
+	"ph_fft.h"
+
+1602768912 source:/home/pi/compi/src/agentthread.cpp
+	"agentthread.h"
+	<agent_pp/agent++.h>
+	<agent_pp/snmp_group.h>
+	<agent_pp/system_group.h>
+	<agent_pp/snmp_target_mib.h>
+	<agent_pp/snmp_notification_mib.h>
+	<agent_pp/notification_originator.h>
+	<agent_pp/mib_complex_entry.h>
+	<agent_pp/v3_mib.h>
+	<agent_pp/vacm.h>
+	<snmp_pp/oid_def.h>
+	<snmp_pp/mp_v3.h>
+	<snmp_pp/log.h>
+	<thread>
+	<sstream>
+	"log.h"
+	<iomanip>
+
+1602750693 /home/pi/compi/include/agentthread.h
+	<mutex>
+	<set>
+

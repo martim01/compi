@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<CodeBlocks_project_file>
+	<FileVersion major="1" minor="6" />
+	<Project>
+		<Option title="compi" />
+		<Option pch_mode="2" />
+		<Option compiler="gcc" />
+		<Build>
+			<Target title="Debug">
+				<Option output="bin/Debug/compi" prefix_auto="1" extension_auto="1" />
+				<Option object_output="obj/Debug/" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Option parameters="/home/pi/compi/config" />
+				<Compiler>
+					<Add option="-g" />
+				</Compiler>
+				<ExtraCommands>
+					<Add after="sudo setcap cap_net_bind_service+ep /home/pi/compi/bin/Debug/compi" />
+					<Mode after="always" />
+				</ExtraCommands>
+			</Target>
+			<Target title="Release">
+				<Option output="bin/Release/compi" prefix_auto="1" extension_auto="1" />
+				<Option object_output="obj/Release/" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-O2" />
+				</Compiler>
+				<Linker>
+					<Add option="-s" />
+				</Linker>
+			</Target>
+		</Build>
+		<Compiler>
+			<Add option="-Wall" />
+			<Add option="-std=c++14" />
+			<Add option="-fexceptions" />
+			<Add directory="../log/include" />
+			<Add directory="include" />
+			<Add directory="external/kiss" />
+			<Add directory="external/phash" />
+		</Compiler>
+		<Linker>
+			<Add library="pthread" />
+			<Add library="portaudio" />
+			<Add library="agent++" />
+			<Add library="snmp++" />
+		</Linker>
+		<Unit filename="../log/include/log.h" />
+		<Unit filename="../log/src/log.cpp" />
+		<Unit filename="external/kiss/kfc.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="external/kiss/kfc.h" />
+		<Unit filename="external/kiss/kiss_fastfir.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="external/kiss/kiss_fft.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="external/kiss/kiss_fft.h" />
+		<Unit filename="external/kiss/kiss_fftnd.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="external/kiss/kiss_fftnd.h" />
+		<Unit filename="external/kiss/kiss_fftndr.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="external/kiss/kiss_fftndr.h" />
+		<Unit filename="external/kiss/kiss_fftr.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="external/kiss/kiss_fftr.h" />
+		<Unit filename="external/kiss/kiss_xcorr.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="external/kiss/kiss_xcorr.h" />
+		<Unit filename="external/kiss/recorder.h" />
+		<Unit filename="external/phash/audiophash.cpp" />
+		<Unit filename="external/phash/audiophash.h" />
+		<Unit filename="external/phash/ph_fft.cpp" />
+		<Unit filename="external/phash/ph_fft.h" />
+		<Unit filename="include/agentthread.h" />
+		<Unit filename="include/compi.h" />
+		<Unit filename="include/hash.h" />
+		<Unit filename="include/inimanager.h" />
+		<Unit filename="include/inisection.h" />
+		<Unit filename="include/logtofile.h" />
+		<Unit filename="include/utils.h" />
+		<Unit filename="src/agentthread.cpp" />
+		<Unit filename="src/compi.cpp" />
+		<Unit filename="src/hash.cpp" />
+		<Unit filename="src/inimanager.cpp" />
+		<Unit filename="src/inisection.cpp" />
+		<Unit filename="src/logtofile.cpp" />
+		<Unit filename="src/main.cpp" />
+		<Unit filename="src/recorder.cpp" />
+		<Unit filename="src/utils.cpp" />
+		<Extensions>
+			<code_completion />
+			<debugger />
+		</Extensions>
+	</Project>
+</CodeBlocks_project_file>
