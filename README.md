@@ -21,9 +21,9 @@ Audio offset and comparison tool
 * [agent++](https://agentpp.com/download/agent++-4.3.1.tar.gz)
 
 ### Other source code included in the project
-[pHash](https://www.phash.org/) - source code for the audio perceptual hashing included in the project
-[kiss](https://github.com/mborgerding/kissfft) - included as a Git submodule
-pml_log - included as a Git submodule
+* [pHash](https://www.phash.org/) - source code for the audio perceptual hashing included in the project
+* [kiss](https://github.com/mborgerding/kissfft) - included as a Git submodule
+* [pml_log](https://github.com/martim01/log) - included as a Git submodule
 
 ## Building compi
 todo
