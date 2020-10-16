@@ -31,5 +31,6 @@ class Compi
         int m_nSampleRate;
         int m_nStartDelay;
         int m_nMaxDelay;
-
+        int m_nFailures;
+        int m_nFailureCount;
 };

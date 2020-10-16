@@ -6,7 +6,15 @@
 #include "logtofile.h"
 #include "hash.h"
 
-Compi::Compi() : m_pAgent(nullptr), m_pRecorder(nullptr)
+Compi::Compi() :
+    m_pAgent(nullptr),
+    m_pRecorder(nullptr),
+    m_nSampleRate(48000),
+    m_nStartDelay(100),
+    m_nMaxDelay(8000),
+    m_nFailures(3),
+    m_nFailureCount(0)
+
 {
 
 }
@@ -50,6 +58,7 @@ void Compi::SetupRecorder()
     m_nSampleRate=m_iniConfig.GetIniInt("recorder", "samplerate", 48000);
     m_nStartDelay = m_iniConfig.GetIniInt("delay", "start", 100);
     m_nMaxDelay = m_iniConfig.GetIniInt("delay", "max", 8000);
+    m_nFailures = m_iniConfig.GetIniInt("delay", "failures", 3);
 
     if(nDevice != -1)
     {
@@ -67,20 +76,28 @@ void Compi::SetupRecorder()
 
 void Compi::HandleNoLock()
 {
-    if(m_pRecorder->GetMaxDelay() < std::chrono::milliseconds(m_nMaxDelay))
+    m_nFailureCount++;
+    pml::Log::Get() << "No match for " << m_nFailureCount  << " calculations since last increase of delay" << std::endl;
+    if(m_nFailureCount >= m_nFailures)
     {
-        m_pRecorder->SetMaxDelay(m_pRecorder->GetMaxDelay()*2);
-        pml::Log::Get() << "Increase Max Delay: " << m_pRecorder->GetMaxDelay().count() << std::endl;
-    }
-    else
-    {
-        m_pRecorder->SetMaxDelay(std::chrono::milliseconds(m_nStartDelay));
-        pml::Log::Get() << "Reset Max Delay: " << m_pRecorder->GetMaxDelay().count() << std::endl;
+        m_nFailureCount = 0;
+        if(m_pRecorder->GetMaxDelay() < std::chrono::milliseconds(m_nMaxDelay))
+        {
+            m_pRecorder->SetMaxDelay(m_pRecorder->GetMaxDelay()*2);
+            pml::Log::Get() << "Increase Max Delay: " << m_pRecorder->GetMaxDelay().count() << std::endl;
+        }
+        else
+        {
+            m_pRecorder->SetMaxDelay(std::chrono::milliseconds(m_nStartDelay));
+            pml::Log::Get() << "Reset Max Delay: " << m_pRecorder->GetMaxDelay().count() << std::endl;
+        }
     }
 }
 
 void Compi::HandleLock(const hashresult& result)
 {
+    m_nFailureCount = 0;
+
     auto delay = std::chrono::milliseconds((abs(result.first*1000)/m_nSampleRate)+100);
     if(delay != m_pRecorder->GetMaxDelay())
     {
