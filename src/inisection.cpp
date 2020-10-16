@@ -70,8 +70,12 @@ string iniSection::ReadSection(std::ifstream* pif)
 		if(nCommentPos == std::string::npos)
 			nCommentPos = sLine.size();
 
+        size_t nSemiPos = sLine.find(";",nEqualPos);
+		if(nSemiPos == std::string::npos)
+			nSemiPos = sLine.size();
+
 		string sKey = sLine.substr(0,nEqualPos);
-		m_mSectionData[sKey] = sLine.substr(nEqualPos+1, nCommentPos-(nEqualPos+1));
+		m_mSectionData[sKey] = sLine.substr(nEqualPos+1, std::min(nCommentPos, nSemiPos)-(nEqualPos+1));
 	}
 	return sLine;
     //return NULL_STRING;
