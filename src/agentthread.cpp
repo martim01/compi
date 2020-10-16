@@ -21,15 +21,15 @@ using namespace Agentpp;
 
 static const char* loggerModuleName = "compi.static_table";
 
-const std::string AgentThread::OID_BASE = "1.3.6.1.4.1.2333.3.2.741.1";
-const std::string AgentThread::OID_BASE_TRAP = "1.3.6.1.4.1.2333.3.2.741.2";
 const std::string AgentThread::OID_AUDIO = ".1";
 const std::string AgentThread::OID_COMPARISON = ".2";
 const std::string AgentThread::OID_DELAY = ".3";
 
-AgentThread::AgentThread(int nPort, int nPortTrap, const std::string& sCommunity) :
+AgentThread::AgentThread(int nPort, int nPortTrap, const std::string& sBaseOid, const std::string& sCommunity) :
     m_nPortTrap(nPortTrap),
+    m_sBaseOid(sBaseOid),
     m_sCommunity(sCommunity)
+
 {
     int nStatus;
     Snmp::socket_startup();  // Initialize socket subsystem
@@ -87,12 +87,12 @@ AgentThread::~AgentThread()
 
 void AgentThread::Init()
 {
-    m_pMib->add(new sysGroup("compi SNMP Agent",OID_BASE.c_str(), 10));
+    m_pMib->add(new sysGroup("compi SNMP Agent",m_sBaseOid.c_str(), 10));
     m_pMib->add(new snmpGroup());
     m_pMib->add(new snmp_target_mib());
     m_pMib->add(new snmp_notification_mib());
 
-    m_pTable = new MibStaticTable((OID_BASE+".1").c_str());
+    m_pTable = new MibStaticTable((m_sBaseOid+".1").c_str());
     //message.channel.side
     m_pTable->add(MibStaticEntry(OID_AUDIO.c_str(), SnmpInt32(-1)));  //audio present
     m_pTable->add(MibStaticEntry(OID_COMPARISON.c_str(), SnmpInt32(-1)));  // comparioson
@@ -234,9 +234,9 @@ void AgentThread::RemoveTrapDestination(const std::string& sIpAddress)
 void AgentThread::SendTrap(int nValue, const std::string& sOid)
 {
     Vbx* pVbs = new Vbx[1];
-    Oidx rdsOid((OID_BASE_TRAP+"."+sOid).c_str());
+    Oidx rdsOid((m_sBaseOid+".2."+sOid).c_str());
 
-    pVbs[0].set_oid((OID_BASE_TRAP+"."+sOid).c_str());
+    pVbs[0].set_oid((m_sBaseOid+".2."+sOid).c_str());
     pVbs[0].set_value(SnmpInt32(nValue));
 
     NotificationOriginator no;

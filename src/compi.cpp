@@ -27,7 +27,11 @@ void Compi::SetupLogging()
 
 void Compi::SetupAgent()
 {
-    m_pAgent = std::make_shared<AgentThread>(m_iniConfig.GetIniInt("ports", "snmp", 161), m_iniConfig.GetIniInt("ports", "trap", 162), m_iniConfig.GetIniString("snmp","community","public"));
+    m_pAgent = std::make_shared<AgentThread>(m_iniConfig.GetIniInt("snmp", "port_snmp", 161),
+                                             m_iniConfig.GetIniInt("snmp", "port_trap", 162),
+                                             m_iniConfig.GetIniString("snmp","base_oid",""),
+                                             m_iniConfig.GetIniString("snmp","community","public"));
+
     iniSection* pSection = m_iniConfig.GetSection("trap_destinations");
     if(pSection)
     {

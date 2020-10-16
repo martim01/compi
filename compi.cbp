@@ -39,8 +39,9 @@
 			<Add option="-fexceptions" />
 			<Add directory="../log/include" />
 			<Add directory="include" />
-			<Add directory="external/kiss" />
+			<Add directory="external/kissfft" />
 			<Add directory="external/phash" />
+			<Add directory="external/kissfft/tools" />
 		</Compiler>
 		<Linker>
 			<Add library="pthread" />
@@ -48,36 +49,24 @@
 			<Add library="agent++" />
 			<Add library="snmp++" />
 		</Linker>
-		<Unit filename="../log/include/log.h" />
-		<Unit filename="../log/src/log.cpp" />
-		<Unit filename="external/kiss/kfc.c">
+		<Unit filename="external/kissfft/kiss_fft.c">
 			<Option compilerVar="CC" />
 		</Unit>
-		<Unit filename="external/kiss/kfc.h" />
-		<Unit filename="external/kiss/kiss_fastfir.c">
+		<Unit filename="external/kissfft/kiss_fft.h" />
+		<Unit filename="external/kissfft/tools/kiss_fftnd.c">
 			<Option compilerVar="CC" />
 		</Unit>
-		<Unit filename="external/kiss/kiss_fft.c">
+		<Unit filename="external/kissfft/tools/kiss_fftnd.h" />
+		<Unit filename="external/kissfft/tools/kiss_fftndr.c">
 			<Option compilerVar="CC" />
 		</Unit>
-		<Unit filename="external/kiss/kiss_fft.h" />
-		<Unit filename="external/kiss/kiss_fftnd.c">
+		<Unit filename="external/kissfft/tools/kiss_fftndr.h" />
+		<Unit filename="external/kissfft/tools/kiss_fftr.c">
 			<Option compilerVar="CC" />
 		</Unit>
-		<Unit filename="external/kiss/kiss_fftnd.h" />
-		<Unit filename="external/kiss/kiss_fftndr.c">
-			<Option compilerVar="CC" />
-		</Unit>
-		<Unit filename="external/kiss/kiss_fftndr.h" />
-		<Unit filename="external/kiss/kiss_fftr.c">
-			<Option compilerVar="CC" />
-		</Unit>
-		<Unit filename="external/kiss/kiss_fftr.h" />
-		<Unit filename="external/kiss/kiss_xcorr.c">
-			<Option compilerVar="CC" />
-		</Unit>
-		<Unit filename="external/kiss/kiss_xcorr.h" />
-		<Unit filename="external/kiss/recorder.h" />
+		<Unit filename="external/kissfft/tools/kiss_fftr.h" />
+		<Unit filename="external/log/include/log.h" />
+		<Unit filename="external/log/src/log.cpp" />
 		<Unit filename="external/phash/audiophash.cpp" />
 		<Unit filename="external/phash/audiophash.h" />
 		<Unit filename="external/phash/ph_fft.cpp" />
@@ -87,13 +76,18 @@
 		<Unit filename="include/hash.h" />
 		<Unit filename="include/inimanager.h" />
 		<Unit filename="include/inisection.h" />
+		<Unit filename="include/kiss_xcorr.h" />
 		<Unit filename="include/logtofile.h" />
+		<Unit filename="include/recorder.h" />
 		<Unit filename="include/utils.h" />
 		<Unit filename="src/agentthread.cpp" />
 		<Unit filename="src/compi.cpp" />
 		<Unit filename="src/hash.cpp" />
 		<Unit filename="src/inimanager.cpp" />
 		<Unit filename="src/inisection.cpp" />
+		<Unit filename="src/kiss_xcorr.c">
+			<Option compilerVar="CC" />
+		</Unit>
 		<Unit filename="src/logtofile.cpp" />
 		<Unit filename="src/main.cpp" />
 		<Unit filename="src/recorder.cpp" />

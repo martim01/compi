@@ -3,7 +3,7 @@
 	"log.h"
 	<iostream>
 
-1602752128 /home/pi/log/include/log.h
+1602842314 /home/pi/log/include/log.h
 	<iostream>
 	<sstream>
 	<string>
@@ -342,13 +342,13 @@
 	<stdlib.h>
 	"kiss_fftndr.h"
 
-1602674860 source:/home/pi/compi/external/phash/audiophash.cpp
+1602776896 source:/home/pi/compi/external/phash/audiophash.cpp
 	"audiophash.h"
 	<samplerate.h>
 	<sndfile.h>
 	<mpg123.h>
 
-1602674860 /home/pi/compi/external/phash/audiophash.h
+1602776896 /home/pi/compi/external/phash/audiophash.h
 	<limits.h>
 	<math.h>
 	<stdlib.h>
@@ -357,15 +357,15 @@
 	<string.h>
 	"ph_fft.h"
 
-1602501377 /home/pi/compi/external/phash/ph_fft.h
+1602776896 /home/pi/compi/external/phash/ph_fft.h
 	<complex.h>
 	<math.h>
 	<stdlib.h>
 
-1602501377 source:/home/pi/compi/external/phash/ph_fft.cpp
+1602776896 source:/home/pi/compi/external/phash/ph_fft.cpp
 	"ph_fft.h"
 
-1602768912 source:/home/pi/compi/src/agentthread.cpp
+1602840707 source:/home/pi/compi/src/agentthread.cpp
 	"agentthread.h"
 	<agent_pp/agent++.h>
 	<agent_pp/snmp_group.h>
@@ -384,7 +384,173 @@
 	"log.h"
 	<iomanip>
 
-1602750693 /home/pi/compi/include/agentthread.h
+1602842557 /home/pi/compi/include/agentthread.h
 	<mutex>
 	<set>
+
+1602776896 source:/home/pi/compi/src/hash.cpp
+	"hash.h"
+	"audiophash.h"
+	<thread>
+	"log.h"
+	"kiss_xcorr.h"
+
+1602776896 /home/pi/compi/include/hash.h
+	<map>
+	<vector>
+	<deque>
+
+1602776896 source:/home/pi/compi/src/inimanager.cpp
+	"inimanager.h"
+	"inisection.h"
+	<sstream>
+	"log.h"
+
+1602776896 /home/pi/compi/include/inimanager.h
+	<map>
+	<string>
+	<stdio.h>
+	<iostream>
+	<fstream>
+
+1602776896 /home/pi/compi/include/inisection.h
+	<map>
+	<string>
+
+1602776896 source:/home/pi/compi/src/inisection.cpp
+	"inisection.h"
+	<iostream>
+	<fstream>
+	<cstdlib>
+	"log.h"
+
+1602842206 source:/home/pi/compi/src/logtofile.cpp
+	"logtofile.h"
+	"utils.h"
+	<syslog.h>
+	<chrono>
+	<iomanip>
+
+1602776896 /home/pi/compi/include/logtofile.h
+	"log.h"
+	<string>
+	<fstream>
+
+1602776896 /home/pi/compi/include/utils.h
+	<string>
+	<vector>
+	<sys/stat.h>
+	<chrono>
+	<queue>
+
+1602776896 source:/home/pi/compi/src/main.cpp
+	<iostream>
+	"log.h"
+	<signal.h>
+	"compi.h"
+	"agentthread.h"
+
+1602776896 /home/pi/compi/include/compi.h
+	<memory>
+	"inimanager.h"
+	"hash.h"
+
+1602776896 source:/home/pi/compi/src/recorder.cpp
+	"recorder.h"
+	<iostream>
+	<iomanip>
+	<sstream>
+	"log.h"
+	<thread>
+	"hash.h"
+
+1602841491 /home/pi/compi/include/recorder.h
+	"portaudio.h"
+	<string>
+	<deque>
+	<chrono>
+	<atomic>
+	<mutex>
+	<condition_variable>
+
+1602776896 source:/home/pi/compi/src/utils.cpp
+	<sstream>
+	<sys/types.h>
+	<unistd.h>
+	<iostream>
+	<iomanip>
+	<string.h>
+	<syslog.h>
+	"utils.h"
+	<sys/socket.h>
+	<sys/ioctl.h>
+	<net/if.h>
+	<netinet/ip.h>
+	<arpa/inet.h>
+	<algorithm>
+
+1602841522 source:/home/pi/compi/src/compi.cpp
+	"compi.h"
+	"agentthread.h"
+	"recorder.h"
+	"log.h"
+	"inisection.h"
+	"logtofile.h"
+	"hash.h"
+
+1602841568 /home/pi/compi/include/kiss_xcorr.h
+	<stdlib.h>
+	"kiss_fftndr.h"
+
+1602841277 /home/pi/compi/external/kissfft/tools/kiss_fftndr.h
+	"kiss_fft.h"
+	"kiss_fftr.h"
+	"kiss_fftnd.h"
+
+1602841277 /home/pi/compi/external/kissfft/kiss_fft.h
+	<stdlib.h>
+	<stdio.h>
+	<math.h>
+	<string.h>
+	<xmmintrin.h>
+	<stdint.h>
+
+1602841277 /home/pi/compi/external/kissfft/tools/kiss_fftr.h
+	"kiss_fft.h"
+
+1602841277 /home/pi/compi/external/kissfft/tools/kiss_fftnd.h
+	"kiss_fft.h"
+
+1602841582 source:/home/pi/compi/src/kiss_xcorr.c
+	<stdlib.h>
+	"kiss_xcorr.h"
+	"_kiss_fft_guts.h"
+
+1602841277 /home/pi/compi/external/kissfft/_kiss_fft_guts.h
+	"kiss_fft.h"
+	"kiss_fft_log.h"
+	<limits.h>
+	<stdint.h>
+	<alloca.h>
+
+1602841277 /home/pi/compi/external/kissfft/kiss_fft_log.h
+
+1602841277 source:/home/pi/compi/external/kissfft/kiss_fft.c
+	"_kiss_fft_guts.h"
+
+1602841277 source:/home/pi/compi/external/kissfft/tools/kiss_fftr.c
+	"kiss_fftr.h"
+	"_kiss_fft_guts.h"
+
+1602841277 source:/home/pi/compi/external/kissfft/tools/kiss_fftndr.c
+	"kiss_fftndr.h"
+	"_kiss_fft_guts.h"
+
+1602841277 source:/home/pi/compi/external/kissfft/tools/kiss_fftnd.c
+	"kiss_fftnd.h"
+	"_kiss_fft_guts.h"
+
+1602842480 source:/home/pi/compi/external/log/src/log.cpp
+	"log.h"
+	<iostream>
 

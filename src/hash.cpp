@@ -60,7 +60,7 @@ hashresult CalculateHash(const std::deque<float>& bufferA, const std::deque<floa
 
             std::vector<float> vTempA(nSamples);
             std::vector<float> vTempB(nSamples);
-            for(size_t i = 0; i < nSamples; i++)
+            for(int i = 0; i < nSamples; i++)
             {
                 vTempA[i] = vBufferA[i+nOffsetA];
                 vTempB[i] = vBufferB[i+nOffsetB];
@@ -155,10 +155,10 @@ int CalculateOffset(std::vector<float> vBufferA, std::vector<float> vBufferB)
     }
 
 
-    int nBlockSize = vBufferA.size();
+    size_t nBlockSize = vBufferA.size();
 
     int offset =  ((biggest < fabs(smallest)) ?  neg_peak_pos : pos_peak_pos) ;
-    if ((unsigned)offset > nBlockSize/2)
+    if ((size_t)offset > nBlockSize/2)
     {
         offset = offset - nBlockSize;
     }

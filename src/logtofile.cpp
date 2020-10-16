@@ -32,27 +32,28 @@ void LogToFile::OpenFile(const std::string& sFilePath, const std::string& sFileN
 
 void LogToFile::Flush(int nLogLevel, const std::stringstream&  logStream)
 {
-    auto now = std::chrono::system_clock::now();
-    auto in_time_t = std::chrono::system_clock::to_time_t(now);
-
-    std::stringstream ssFilePath;
-    std::stringstream ssFileName;
-    ssFilePath << m_sRootPath << std::put_time(localtime(&in_time_t), "%Y/%m/%d");
-    ssFileName << std::put_time(localtime(&in_time_t), "/%H") << ".log";
-
-    if(m_ofLog.is_open() == false || ssFilePath.str() != m_sFilePath || ssFileName.str() != m_sFileName)
+    if(nLogLevel >= m_eLevel)
     {
-        OpenFile(ssFilePath.str(), ssFileName.str());
-    }
+        auto now = std::chrono::system_clock::now();
+        auto in_time_t = std::chrono::system_clock::to_time_t(now);
 
-    if(m_ofLog.is_open())
-    {
-        m_ofLog << std::put_time(localtime(&in_time_t), "%d/%m/%y\t%H:%M:%S") << "\t";
-        m_ofLog << pml::Log::STR_LEVEL[nLogLevel] << "\t" << logStream.str();
-        m_ofLog.flush();
+        std::stringstream ssFilePath;
+        std::stringstream ssFileName;
+        ssFilePath << m_sRootPath << std::put_time(localtime(&in_time_t), "%Y/%m/%d");
+        ssFileName << std::put_time(localtime(&in_time_t), "/%H") << ".log";
+
+        if(m_ofLog.is_open() == false || ssFilePath.str() != m_sFilePath || ssFileName.str() != m_sFileName)
+        {
+            OpenFile(ssFilePath.str(), ssFileName.str());
+        }
+
+        if(m_ofLog.is_open())
+        {
+            m_ofLog << std::put_time(localtime(&in_time_t), "%d/%m/%y\t%H:%M:%S") << "\t";
+            m_ofLog << pml::Log::STR_LEVEL[nLogLevel] << "\t" << logStream.str();
+            m_ofLog.flush();
+        }
     }
 }
-
-
 
 

@@ -1,0 +1,8 @@
+[submodule "external/kissfft"]
+	path = external/kissfft
+	url = https://github.com/mborgerding/kissfft
+	branch = master
+[submodule "external/log"]
+	path = external/log
+	url = https://github.com/martim01/log
+	branch = master

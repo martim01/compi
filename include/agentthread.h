@@ -16,7 +16,7 @@ static bool g_bRun= true;
 class AgentThread
 {
     public:
-        AgentThread(int nPort, int nPortTrap, const std::string& sCommunity="public");
+        AgentThread(int nPort, int nPortTrap,const std::string& sBaseOid, const std::string& sCommunity="public");
         ~AgentThread();
 
         void Init();
@@ -44,12 +44,12 @@ class AgentThread
         std::mutex m_mutex;
 
         int m_nPortTrap;
-	std::string m_sCommunity;
+
+        std::string m_sBaseOid;
+        std::string m_sCommunity;
 
         std::set<std::string> m_setTrapDestination;
 
-        static const std::string OID_BASE;
-        static const std::string OID_BASE_TRAP;
         static const std::string OID_AUDIO;
         static const std::string OID_COMPARISON;
         static const std::string OID_DELAY;
