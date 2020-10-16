@@ -92,4 +92,4 @@ set_target_properties(compi PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE
 
 #install
 install(TARGETS compi RUNTIME DESTINATION /usr/local/bin)
-
+install(CODE "execute_process(COMMAND setcap cap_net_bind_service+ep /usr/local/bin/compi)")
