@@ -25,11 +25,13 @@ const std::string AgentThread::OID_AUDIO = ".1";
 const std::string AgentThread::OID_COMPARISON = ".2";
 const std::string AgentThread::OID_DELAY = ".3";
 
+bool g_bRun = true;
+
 AgentThread::AgentThread(int nPort, int nPortTrap, const std::string& sBaseOid, const std::string& sCommunity) :
     m_nPortTrap(nPortTrap),
     m_sBaseOid(sBaseOid),
-    m_sCommunity(sCommunity)
-
+    m_sCommunity(sCommunity),
+    m_pThread(nullptr)
 {
     int nStatus;
     Snmp::socket_startup();  // Initialize socket subsystem
@@ -80,6 +82,10 @@ AgentThread::AgentThread(int nPort, int nPortTrap, const std::string& sBaseOid, 
 
 AgentThread::~AgentThread()
 {
+    if(m_pThread)
+    {
+        m_pThread->join();
+    }
     delete m_pMib;
     delete m_pSnmp;
     Snmp::socket_cleanup();  // Shut down socket subsystem
@@ -106,8 +112,8 @@ void AgentThread::Init()
 void AgentThread::Run()
 {
     InitTraps();
-    std::thread th(&AgentThread::ThreadLoop, this);
-    th.detach();
+    m_pThread = std::make_unique<std::thread>(&AgentThread::ThreadLoop, this);
+
 }
 
 void AgentThread::InitTraps()
@@ -136,7 +142,6 @@ void AgentThread::ThreadLoop()
 	    req = m_pReqList->receive(1);
 	    if (req)
         {
-//          std::lock_guard<std::mutex> lg(m_mutex);
             m_pMib->process_request(req);
         }
         else

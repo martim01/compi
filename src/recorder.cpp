@@ -199,7 +199,7 @@ void Recorder::Callback(const float* pBuffer, size_t nFrameCount)
         pml::Log::Get(pml::Log::LOG_ERROR) << "Recorder\tMissing frames" << std::endl;
     }
 
-    //std::lock_guard<std::mutex> lg(m_mutex);
+    std::lock_guard<std::mutex> lg(m_mutex);
 
 
     if(m_Buffer.first.size() < m_nSamplesNeeded+m_nSamplesToHash)
@@ -244,4 +244,10 @@ void Recorder::SetMaxDelay(const std::chrono::milliseconds& maxDelay)
 std::chrono::milliseconds Recorder::GetMaxDelay()
 {
     return std::chrono::milliseconds(m_nSamplesNeeded*500/m_nSampleRate);
+}
+
+
+std::chrono::milliseconds Recorder::GetExpectedTimeToFillBuffer()
+{
+    return std::chrono::milliseconds(((m_nSamplesNeeded+m_nSamplesToHash)*1000/m_nSampleRate)+100); //add 100ms to allow for signalling time etc.
 }

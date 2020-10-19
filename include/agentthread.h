@@ -1,7 +1,8 @@
 #pragma once
 #include <mutex>
 #include <set>
-
+#include <thread>
+#include <atomic>
 namespace Agentpp
 {
     class Mib;
@@ -11,7 +12,7 @@ namespace Agentpp
 };
 
 
-static bool g_bRun= true;
+extern bool g_bRun;
 
 class AgentThread
 {
@@ -30,7 +31,7 @@ class AgentThread
         void DelayChanged(std::chrono::milliseconds delay);
 
     private:
-	void InitTraps();
+        void InitTraps();
         void ThreadLoop();
 
         void SendTrap(int nValue, const std::string& sOid);
@@ -49,6 +50,8 @@ class AgentThread
         std::string m_sCommunity;
 
         std::set<std::string> m_setTrapDestination;
+
+        std::unique_ptr<std::thread> m_pThread;
 
         static const std::string OID_AUDIO;
         static const std::string OID_COMPARISON;

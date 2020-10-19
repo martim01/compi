@@ -38,6 +38,7 @@ class Recorder
 
         void SetMaxDelay(const std::chrono::milliseconds& maxDelay);
         std::chrono::milliseconds GetMaxDelay();
+        std::chrono::milliseconds GetExpectedTimeToFillBuffer();
 
         ~Recorder();
     private:

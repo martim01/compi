@@ -7,24 +7,22 @@
 
 static void sig(int signo)
 {
-
         switch (signo)
         {
             case SIGSEGV:
             {
-                std::cout  << "Segmentation fault, aborting." << std::endl;
+                pml::Log::Get(pml::Log::LOG_CRITICAL)  << "Segmentation fault, aborting." << std::endl;
                 exit(1);
             }
-            case SIGTERM:
-            case SIGINT:
+        case SIGTERM:
+        case SIGINT:
 	    case SIGQUIT:
             {
                 if (g_bRun)
                 {
-                    std::cout  << "User abort" << std::endl;
+                    pml::Log::Get(pml::Log::LOG_WARN)  << "User abort" << std::endl;
                 }
                 g_bRun = false;
-                exit(1);
             }
 	    break;
         }

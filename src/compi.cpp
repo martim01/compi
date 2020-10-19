@@ -5,6 +5,7 @@
 #include "inisection.h"
 #include "logtofile.h"
 #include "hash.h"
+#include <thread>
 
 Compi::Compi() :
     m_pAgent(nullptr),
@@ -108,27 +109,40 @@ void Compi::HandleLock(const hashresult& result)
 
 void Compi::Loop()
 {
-    while(true)
+    while(g_bRun)
     {
         std::unique_lock<std::mutex> lck(m_pRecorder->GetMutex());
-        m_pRecorder->GetConditionVariable().wait(lck, [this]{return m_pRecorder->BufferFull(); });
 
-        hashresult result = CalculateHash(m_pRecorder->GetBuffer().first,m_pRecorder->GetBuffer().second, m_pRecorder->GetNumberOfSamplesToHash());
-
-        pml::Log::Get() << "Calculation\tDelay=" <<  (result.first*1000/m_nSampleRate) << "ms\tConfidence=" << result.second << std::endl;
-        if(result.second < 0.5) //could not get lock
+        //work out how long to wait for before the buffer should be full
+        bool bDone = m_pRecorder->GetConditionVariable().wait_for(lck, m_pRecorder->GetExpectedTimeToFillBuffer(), [this]{return m_pRecorder->BufferFull(); });
+        if(bDone)
         {
-            HandleNoLock();
+            hashresult result = CalculateHash(m_pRecorder->GetBuffer().first,m_pRecorder->GetBuffer().second, m_pRecorder->GetNumberOfSamplesToHash());
+
+            pml::Log::Get() << "Calculation\tDelay=" <<  (result.first*1000/m_nSampleRate) << "ms\tConfidence=" << result.second << std::endl;
+            if(result.second < 0.5) //could not get lock
+            {
+                HandleNoLock();
+            }
+            else
+            {
+                HandleLock(result);
+            }
+            UpdateSNMP(result);
         }
         else
         {
-            HandleLock(result);
+            pml::Log::Get(pml::Log::LOG_ERROR) << "Buffer taking longer to fill than expected!" << std::endl;
+            m_pAgent->AudioChanged(0);
+            m_pAgent->ComparisonChanged(-1);
+            m_pAgent->DelayChanged(std::chrono::milliseconds(0));
         }
 
-        UpdateSNMP(result);
+
         //get the recorder to start filling up again
         m_pRecorder->EmptyBuffer();
     }
+    pml::Log::Get() << "Compi\tExiting...." << std::endl;
 }
 
 void Compi::UpdateSNMP(const hashresult& result)
