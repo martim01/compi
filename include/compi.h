@@ -2,7 +2,12 @@
 #include <memory>
 #include "inimanager.h"
 #include "hash.h"
+#include <atomic>
 
+namespace Snmp_pp
+{
+    class SnmpSyntax;
+};
 
 class AgentThread;
 class Recorder;
@@ -12,6 +17,9 @@ class Compi
     public:
         Compi();
         int Run(const std::string& sPath);
+
+        bool MaskCallback(Snmp_pp::SnmpSyntax* pValue, int nSyntax);
+        bool ActivateCallback(Snmp_pp::SnmpSyntax* pValue, int nSyntax);
 
     private:
 
@@ -23,6 +31,7 @@ class Compi
         void HandleNoLock();
         void HandleLock(const hashresult& result);
         void UpdateSNMP(const hashresult& result);
+        void ClearSNMP();
 
         iniManager m_iniConfig;
         std::shared_ptr<AgentThread> m_pAgent;
@@ -33,4 +42,10 @@ class Compi
         int m_nMaxDelay;
         int m_nFailures;
         int m_nFailureCount;
+        bool m_bSendOnActiveOnly;
+
+        std::atomic<unsigned int> m_nMask;
+        std::atomic<bool> m_bActive;
+
+        enum { FORCE_OFF, FOLLOW_ACTIVE,FORCE_ON};
 };

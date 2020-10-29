@@ -5,7 +5,8 @@
 #include <iomanip>
 
 
-LogToFile::LogToFile(const std::string& sRootPath) : m_sRootPath(CreatePath(sRootPath))
+LogToFile::LogToFile(const std::string& sRootPath, int nTimestamp, enumTS eResolution) : LogOutput(nTimestamp, eResolution),
+ m_sRootPath(CreatePath(sRootPath))
 {
 }
 
@@ -30,7 +31,7 @@ void LogToFile::OpenFile(const std::string& sFilePath, const std::string& sFileN
     chmod(sFile.c_str(), 0664);
 }
 
-void LogToFile::Flush(int nLogLevel, const std::stringstream&  logStream)
+void LogToFile::Flush(pml::Log::enumLevel nLogLevel, const std::stringstream&  logStream)
 {
     if(nLogLevel >= m_eLevel)
     {
@@ -49,7 +50,7 @@ void LogToFile::Flush(int nLogLevel, const std::stringstream&  logStream)
 
         if(m_ofLog.is_open())
         {
-            m_ofLog << std::put_time(localtime(&in_time_t), "%d/%m/%y\t%H:%M:%S") << "\t";
+            m_ofLog << Timestamp().str();
             m_ofLog << pml::Log::STR_LEVEL[nLogLevel] << "\t" << logStream.str();
             m_ofLog.flush();
         }

@@ -18,22 +18,22 @@ int paCallback( const void *input, void *output, unsigned long frameCount, const
 }
 
 
-Recorder::Recorder(const std::string& sDeviceName, unsigned long nSampleRate, const std::chrono::milliseconds& maxDelay) :
+Recorder::Recorder(const std::string& sDeviceName, unsigned long nSampleRate, const std::chrono::milliseconds& maxDelay, const std::chrono::milliseconds& minWindow) :
 m_sDeviceName(sDeviceName),
 m_nDeviceId(-1),
 m_nSampleRate(nSampleRate),
 m_nSamplesNeeded(maxDelay.count()*m_nSampleRate/500),
-m_nSamplesToHash(4096)
+m_nSamplesToHash((minWindow.count()*m_nSampleRate)/1000)
 {
 
 }
 
-Recorder::Recorder(unsigned short nDeviceId, unsigned long nSampleRate, const std::chrono::milliseconds& maxDelay) :
+Recorder::Recorder(unsigned short nDeviceId, unsigned long nSampleRate, const std::chrono::milliseconds& maxDelay, const std::chrono::milliseconds& minWindow) :
 m_sDeviceName(""),
 m_nDeviceId(nDeviceId),
 m_nSampleRate(nSampleRate),
 m_nSamplesNeeded(maxDelay.count()*m_nSampleRate/500),
-m_nSamplesToHash(4096)
+m_nSamplesToHash((minWindow.count()*m_nSampleRate)/1000)
 {
 }
 

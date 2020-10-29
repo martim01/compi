@@ -5,7 +5,6 @@
 #include <agent_pp/snmp_target_mib.h>
 #include <agent_pp/snmp_notification_mib.h>
 #include <agent_pp/notification_originator.h>
-#include <agent_pp/mib_complex_entry.h>
 #include <agent_pp/v3_mib.h>
 #include <agent_pp/vacm.h>
 #include <snmp_pp/oid_def.h>
@@ -15,6 +14,7 @@
 #include <sstream>
 #include "log.h"
 #include <iomanip>
+#include "mibwritabletable.h"
 
 using namespace Snmp_pp;
 using namespace Agentpp;
@@ -24,6 +24,8 @@ static const char* loggerModuleName = "compi.static_table";
 const std::string AgentThread::OID_AUDIO = ".1";
 const std::string AgentThread::OID_COMPARISON = ".2";
 const std::string AgentThread::OID_DELAY = ".3";
+const std::string AgentThread::OID_MASK = ".4";
+const std::string AgentThread::OID_ACTIVATE = ".5";
 
 bool g_bRun = true;
 
@@ -65,18 +67,13 @@ AgentThread::AgentThread(int nPort, int nPortTrap, const std::string& sBaseOid, 
     m_pReqList->set_read_community(m_sCommunity.c_str());
     m_pReqList->set_write_community(m_sCommunity.c_str());
 
-  m_pReqList->set_address_validation(true);
+    m_pReqList->set_address_validation(true);
 
     // register requestList for outgoing requests
     m_pMib->set_request_list(m_pReqList);
 
 
-    // add supported objects
-    Init();
-    // load persitent objects from disk
-    m_pMib->init();
 
-    m_pReqList->set_snmp(m_pSnmp);
 
 }
 
@@ -91,21 +88,29 @@ AgentThread::~AgentThread()
     Snmp::socket_cleanup();  // Shut down socket subsystem
 }
 
-void AgentThread::Init()
+void AgentThread::Init(std::function<bool(Snmp_pp::SnmpSyntax*, int)> maskCallback, std::function<bool(Snmp_pp::SnmpSyntax*, int)> activateCallback, unsigned int nMaskLevel)
 {
     m_pMib->add(new sysGroup("compi SNMP Agent",m_sBaseOid.c_str(), 10));
     m_pMib->add(new snmpGroup());
     m_pMib->add(new snmp_target_mib());
     m_pMib->add(new snmp_notification_mib());
 
-    m_pTable = new MibStaticTable((m_sBaseOid+".1").c_str());
+    m_pTable = new MibWritableTable((m_sBaseOid+".1").c_str());
     //message.channel.side
-    m_pTable->add(MibStaticEntry(OID_AUDIO.c_str(), SnmpInt32(-1)));  //audio present
-    m_pTable->add(MibStaticEntry(OID_COMPARISON.c_str(), SnmpInt32(-1)));  // comparioson
-    m_pTable->add(MibStaticEntry(OID_DELAY.c_str(), SnmpInt32(-1)));  // comparioson
+    m_pTable->add(MibWritableEntry(OID_AUDIO.c_str(), SnmpInt32(-1)));  //audio present
+    m_pTable->add(MibWritableEntry(OID_COMPARISON.c_str(), SnmpInt32(-1)));  // comparioson
+    m_pTable->add(MibWritableEntry(OID_DELAY.c_str(), SnmpInt32(-1)));  // comparioson
+
+    m_pTable->add(MibWritableEntry(OID_MASK.c_str(), SnmpUInt32(nMaskLevel), maskCallback));  // comparioson
+    m_pTable->add(MibWritableEntry(OID_ACTIVATE.c_str(), SnmpUInt32(0), activateCallback));  // comparioson
 
 
     m_pMib->add(m_pTable);
+
+    // load persitent objects from disk
+    m_pMib->init();
+
+    m_pReqList->set_snmp(m_pSnmp);
 
 }
 
@@ -157,7 +162,7 @@ void AgentThread::AudioChanged(int nState)
 {
     std::lock_guard<std::mutex> lg(m_mutex);
 
-    MibStaticEntry* pEntry = m_pTable->get(OID_AUDIO.c_str(), true);
+    MibWritableEntry* pEntry = m_pTable->get(OID_AUDIO.c_str(), true);
     if(pEntry)
     {
         int nCurrent(-1);
@@ -179,7 +184,7 @@ void AgentThread::ComparisonChanged(bool bSame)
 {
     std::lock_guard<std::mutex> lg(m_mutex);
 
-    MibStaticEntry* pEntry = m_pTable->get(OID_COMPARISON.c_str(), true);
+    MibWritableEntry* pEntry = m_pTable->get(OID_COMPARISON.c_str(), true);
     if(pEntry)
     {
         int nCurrent(-1);
@@ -202,7 +207,7 @@ void AgentThread::DelayChanged(std::chrono::milliseconds delay)
 {
     std::lock_guard<std::mutex> lg(m_mutex);
 
-    MibStaticEntry* pEntry = m_pTable->get(OID_DELAY.c_str(), true);
+    MibWritableEntry* pEntry = m_pTable->get(OID_DELAY.c_str(), true);
     if(pEntry)
     {
         int nCurrent(-1);
@@ -261,3 +266,4 @@ void AgentThread::SendTrap(int nValue, const std::string& sOid)
 
     delete[] pVbs;
 }
+

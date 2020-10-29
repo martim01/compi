@@ -14,8 +14,8 @@ class Recorder
 {
     public:
 
-        Recorder(const std::string& sDeviceName, unsigned long nSampleRate, const std::chrono::milliseconds& maxDelay);
-        Recorder(unsigned short nDeviceId, unsigned long nSampleRate, const std::chrono::milliseconds& maxDelay);
+        Recorder(const std::string& sDeviceName, unsigned long nSampleRate, const std::chrono::milliseconds& maxDelay, const std::chrono::milliseconds& minWindow);
+        Recorder(unsigned short nDeviceId, unsigned long nSampleRate, const std::chrono::milliseconds& maxDelay, const std::chrono::milliseconds& minWindow);
 
         bool Init();
         void Exit();

@@ -6,6 +6,8 @@
 #include "logtofile.h"
 #include "hash.h"
 #include <thread>
+#include <functional>
+#include <snmp_pp/integer.h>
 
 Compi::Compi() :
     m_pAgent(nullptr),
@@ -14,8 +16,10 @@ Compi::Compi() :
     m_nStartDelay(100),
     m_nMaxDelay(8000),
     m_nFailures(3),
-    m_nFailureCount(0)
-
+    m_nFailureCount(0),
+    m_bSendOnActiveOnly(false),
+    m_nMask(FOLLOW_ACTIVE),
+    m_bActive(false)
 {
 
 }
@@ -41,6 +45,10 @@ void Compi::SetupAgent()
                                              m_iniConfig.GetIniString("snmp","base_oid",""),
                                              m_iniConfig.GetIniString("snmp","community","public"));
 
+    m_bSendOnActiveOnly = m_iniConfig.GetIniInt("snmp", "active_only", 0);
+    m_nMask = m_iniConfig.GetIniInt("snmp", "mask", 1);
+
+
     iniSection* pSection = m_iniConfig.GetSection("trap_destinations");
     if(pSection)
     {
@@ -49,6 +57,10 @@ void Compi::SetupAgent()
             m_pAgent->AddTrapDestination(itKey->second);
         }
     }
+
+    m_pAgent->Init(std::bind(&Compi::MaskCallback,this,std::placeholders::_1, std::placeholders::_2),
+                   std::bind(&Compi::ActivateCallback,this,std::placeholders::_1, std::placeholders::_2), m_nMask);
+
     m_pAgent->Run();
 
 }
@@ -63,12 +75,12 @@ void Compi::SetupRecorder()
 
     if(nDevice != -1)
     {
-        m_pRecorder = std::make_shared<Recorder>(nDevice,m_nSampleRate, std::chrono::milliseconds(m_nStartDelay));
+        m_pRecorder = std::make_shared<Recorder>(nDevice,m_nSampleRate, std::chrono::milliseconds(m_nStartDelay), std::chrono::milliseconds(m_iniConfig.GetIniInt("comparison","window",100)));
 
     }
     else
     {
-        m_pRecorder = std::make_shared<Recorder>(m_iniConfig.GetIniString("recorder", "device", "default"),m_nSampleRate, std::chrono::milliseconds(m_nStartDelay));
+        m_pRecorder = std::make_shared<Recorder>(m_iniConfig.GetIniString("recorder", "device", "default"),m_nSampleRate, std::chrono::milliseconds(m_nStartDelay), std::chrono::milliseconds(m_iniConfig.GetIniInt("comparison","window",100)));
 
     }
     m_pRecorder->Init();
@@ -147,10 +159,22 @@ void Compi::Loop()
 
 void Compi::UpdateSNMP(const hashresult& result)
 {
-    //send the traps
-    m_pAgent->AudioChanged(1);  //audio must be okay as we are here
-    m_pAgent->ComparisonChanged(result.second > 0.6);
-    m_pAgent->DelayChanged(std::chrono::milliseconds(result.first*1000/m_nSampleRate));
+    if(m_nMask == FORCE_ON || (m_nMask == FOLLOW_ACTIVE && m_bActive) || !m_bSendOnActiveOnly)
+    {
+        //send the traps
+        m_pAgent->AudioChanged(1);  //audio must be okay as we are here
+        m_pAgent->ComparisonChanged(result.second > 0.6);
+        m_pAgent->DelayChanged(std::chrono::milliseconds(result.first*1000/m_nSampleRate));
+    }
+}
+
+void Compi::ClearSNMP()
+{
+    if(m_bSendOnActiveOnly)
+    {
+        m_pAgent->AudioChanged(1);
+        m_pAgent->ComparisonChanged(1);
+    }
 }
 
 int Compi::Run(const std::string& sPath)
@@ -170,4 +194,61 @@ int Compi::Run(const std::string& sPath)
 
     }
     return -1;
+}
+
+
+bool Compi::MaskCallback(Snmp_pp::SnmpSyntax* pValue, int nSyntax)
+{
+    Snmp_pp::SnmpUInt32* pInt = dynamic_cast<Snmp_pp::SnmpUInt32*>(pValue);
+    if(!pInt)
+    {
+        pml::Log::Get(pml::Log::LOG_WARN) << "Could not dynamic cast!" << std::endl;
+    }
+
+    if(pInt && *pInt < 3)
+    {
+        if(m_nMask != *pInt)
+        {
+            m_nMask = *pInt;
+            m_iniConfig.SetSectionValue("snmp", "mask", m_nMask);
+            m_iniConfig.WriteIniFile();
+
+            if(m_nMask == FORCE_OFF || (m_nMask == FOLLOW_ACTIVE && !m_bActive))
+            {
+                ClearSNMP();
+            }
+        }
+
+        pml::Log::Get() << "SNMP mask set to " << m_nMask << std::endl;
+        return true;
+    }
+    else
+    {
+        return false;
+    }
+}
+
+bool Compi::ActivateCallback(Snmp_pp::SnmpSyntax* pValue, int nSyntax)
+{
+    Snmp_pp::SnmpUInt32* pInt = dynamic_cast<Snmp_pp::SnmpUInt32*>(pValue);
+    if(!pInt)
+    {
+        pml::Log::Get() << "Could not dynamic cast!" << std::endl;
+    }
+
+    if(pInt && *pInt < 2)
+    {
+        m_bActive = (*pInt != 0);
+        if(m_nMask == FORCE_OFF || (m_nMask == FOLLOW_ACTIVE && !m_bActive))
+        {
+            ClearSNMP();
+        }
+
+        pml::Log::Get(pml::Log::LOG_WARN) << "Active set to " << m_bActive << std::endl;
+        return true;
+    }
+    else
+    {
+        return false;
+    }
 }
