@@ -213,10 +213,13 @@ bool Compi::MaskCallback(Snmp_pp::SnmpSyntax* pValue, int nSyntax)
             m_iniConfig.SetSectionValue("snmp", "mask", m_nMask);
             m_iniConfig.WriteIniFile();
 
+            m_pAgent->OverallChanged(m_nMask == FORCE_ON || (m_nMask == FOLLOW_ACTIVE && m_bActive));
+
             if(m_nMask == FORCE_OFF || (m_nMask == FOLLOW_ACTIVE && !m_bActive))
             {
                 ClearSNMP();
             }
+
         }
 
         pml::Log::Get() << "SNMP mask set to " << m_nMask << std::endl;
@@ -239,12 +242,15 @@ bool Compi::ActivateCallback(Snmp_pp::SnmpSyntax* pValue, int nSyntax)
     if(pInt && *pInt < 2)
     {
         m_bActive = (*pInt != 0);
+
+        m_pAgent->OverallChanged(m_nMask == FORCE_ON || (m_nMask == FOLLOW_ACTIVE && m_bActive));
+
         if(m_nMask == FORCE_OFF || (m_nMask == FOLLOW_ACTIVE && !m_bActive))
         {
             ClearSNMP();
         }
 
-        pml::Log::Get(pml::Log::LOG_WARN) << "Active set to " << m_bActive << std::endl;
+        pml::Log::Get(pml::Log::LOG_INFO) << "Active set to " << m_bActive << std::endl;
         return true;
     }
     else

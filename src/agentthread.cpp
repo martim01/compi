@@ -26,6 +26,7 @@ const std::string AgentThread::OID_COMPARISON = ".2";
 const std::string AgentThread::OID_DELAY = ".3";
 const std::string AgentThread::OID_MASK = ".4";
 const std::string AgentThread::OID_ACTIVATE = ".5";
+const std::string AgentThread::OID_OVERALL = ".6";
 
 bool g_bRun = true;
 
@@ -47,18 +48,11 @@ AgentThread::AgentThread(int nPort, int nPortTrap, const std::string& sBaseOid, 
 
     if (nStatus == SNMP_CLASS_SUCCESS)
     {
-
-        LOG_BEGIN(loggerModuleName, EVENT_LOG | 1);
-        LOG("main: SNMP listen port");
-        LOG(nPort);
-        LOG_END;
+        pml::Log::Get() << "SNMP Started" << std::endl;
     }
     else
     {
-        LOG_BEGIN(loggerModuleName, ERROR_LOG | 0);
-        LOG("main: SNMP port init failed");
-        LOG(nStatus);
-        LOG_END;
+        pml::Log::Get(pml::Log::LOG_CRITICAL) << "SNMP Failed To Start!" << std::endl;
         exit(1);
     }
 
@@ -100,6 +94,7 @@ void AgentThread::Init(std::function<bool(Snmp_pp::SnmpSyntax*, int)> maskCallba
     m_pTable->add(MibWritableEntry(OID_AUDIO.c_str(), SnmpInt32(-1)));  //audio present
     m_pTable->add(MibWritableEntry(OID_COMPARISON.c_str(), SnmpInt32(-1)));  // comparioson
     m_pTable->add(MibWritableEntry(OID_DELAY.c_str(), SnmpInt32(-1)));  // comparioson
+    m_pTable->add(MibWritableEntry(OID_OVERALL.c_str(), SnmpInt32(-1)));  // comparioson
 
     m_pTable->add(MibWritableEntry(OID_MASK.c_str(), SnmpUInt32(nMaskLevel), maskCallback));  // comparioson
     m_pTable->add(MibWritableEntry(OID_ACTIVATE.c_str(), SnmpUInt32(0), activateCallback));  // comparioson
@@ -179,6 +174,30 @@ void AgentThread::AudioChanged(int nState)
         pml::Log::Get(pml::Log::LOG_WARN)  << "AgentThread\tAudioChanged:  OID Not Found!" << std::endl;
     }
 }
+
+
+void AgentThread::OverallChanged(bool bActive)
+{
+    std::lock_guard<std::mutex> lg(m_mutex);
+
+    MibWritableEntry* pEntry = m_pTable->get(OID_OVERALL.c_str(), true);
+    if(pEntry)
+    {
+        int nCurrent(-1);
+        pEntry->get_value(nCurrent);
+        if(nCurrent != static_cast<int>(bActive))
+        {
+  	        pml::Log::Get(pml::Log::LOG_DEBUG) << "AgentThread\tOverallChanged: " << bActive << std::endl;
+            pEntry->set_value(SnmpInt32(bActive));
+            SendTrap(static_cast<int>(bActive), OID_OVERALL);
+        }
+    }
+    else
+    {
+        pml::Log::Get(pml::Log::LOG_WARN)  << "AgentThread\tOverallChanged:  OID Not Found!" << std::endl;
+    }
+}
+
 
 void AgentThread::ComparisonChanged(bool bSame)
 {

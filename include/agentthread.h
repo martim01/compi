@@ -36,7 +36,7 @@ class AgentThread
         void AudioChanged(int nState);
         void ComparisonChanged(bool bSame);
         void DelayChanged(std::chrono::milliseconds delay);
-
+        void OverallChanged(bool bActive);
 
 
     private:
@@ -67,4 +67,5 @@ class AgentThread
         static const std::string OID_DELAY;
         static const std::string OID_MASK;
         static const std::string OID_ACTIVATE;
+        static const std::string OID_OVERALL;
 };
