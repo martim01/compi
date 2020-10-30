@@ -65,6 +65,7 @@ add_executable(compi "external/kissfft/kiss_fft.c"
                      "src/logtofile.cpp"
                      "src/main.cpp"
                      "src/recorder.cpp"
+                     "src/mibwritabletable.cpp"
                      "src/utils.cpp")
 
 
