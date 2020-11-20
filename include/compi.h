@@ -3,6 +3,8 @@
 #include "inimanager.h"
 #include "hash.h"
 #include <atomic>
+#include <chrono>
+
 
 namespace Snmp_pp
 {
@@ -33,6 +35,9 @@ class Compi
         void UpdateSNMP(const hashresult& result);
         void ClearSNMP();
 
+        enum enumLeg{A_LEG=0, B_LEG=1};
+        bool CheckSilence(float dPeak, enumLeg eLeg);
+
         iniManager m_iniConfig;
         std::shared_ptr<AgentThread> m_pAgent;
         std::shared_ptr<Recorder> m_pRecorder;
@@ -44,7 +49,12 @@ class Compi
         int m_nFailureCount;
         bool m_bSendOnActiveOnly;
 
-        std::atomic<unsigned int> m_nMask;
+        float m_dSilenceThreshold;
+        int m_nSilenceHoldoff;
+        bool m_bSilent[2];
+        std::chrono::time_point<std::chrono::system_clock> m_tpSilence[2];
+
+        std::atomic<int> m_nMask;
         std::atomic<bool> m_bActive;
 
         enum { FORCE_OFF, FOLLOW_ACTIVE,FORCE_ON};

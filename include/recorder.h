@@ -9,7 +9,7 @@
 
 
 using deinterlacedBuffer = std::pair<std::deque<float>, std::deque<float> >;
-
+using peak = std::pair<float, float>;
 class Recorder
 {
     public:
@@ -26,10 +26,14 @@ class Recorder
         std::condition_variable& GetConditionVariable() { return m_cv; }
 
         bool BufferFull();
-        void EmptyBuffer();
+        void EmptyBuffer(int nOffset);
 
         const deinterlacedBuffer& GetBuffer() const
         {   return m_Buffer; }
+
+        const peak& GetPeak() const
+        { return m_peak;    }
+
 
         size_t GetNumberOfSamplesToHash() const
         {
@@ -66,6 +70,8 @@ class Recorder
 
         std::mutex m_mutex;
         std::condition_variable m_cv;
+
+        peak m_peak;
 
         static const unsigned short CHANNELS =2;
 };

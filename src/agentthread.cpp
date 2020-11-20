@@ -27,6 +27,8 @@ const std::string AgentThread::OID_DELAY = ".3";
 const std::string AgentThread::OID_MASK = ".4";
 const std::string AgentThread::OID_ACTIVATE = ".5";
 const std::string AgentThread::OID_OVERALL = ".6";
+const std::string AgentThread::OID_SILENCE_A_LEG = ".7";
+const std::string AgentThread::OID_SILENCE_B_LEG = ".8";
 
 bool g_bRun = true;
 
@@ -90,15 +92,18 @@ void AgentThread::Init(std::function<bool(Snmp_pp::SnmpSyntax*, int)> maskCallba
     m_pMib->add(new snmp_notification_mib());
 
     m_pTable = new MibWritableTable((m_sBaseOid+".1").c_str());
-    //message.channel.side
+    //message.channel.sid
     m_pTable->add(MibWritableEntry(OID_AUDIO.c_str(), SnmpInt32(-1)));  //audio present
     m_pTable->add(MibWritableEntry(OID_COMPARISON.c_str(), SnmpInt32(-1)));  // comparioson
     m_pTable->add(MibWritableEntry(OID_DELAY.c_str(), SnmpInt32(-1)));  // comparioson
-    m_pTable->add(MibWritableEntry(OID_OVERALL.c_str(), SnmpInt32(-1)));  // comparioson
+    m_pTable->add(MibWritableEntry(OID_OVERALL.c_str(), SnmpInt32((nMaskLevel == 2 ? 1 : 0))));  // comparioson
 
-    m_pTable->add(MibWritableEntry(OID_MASK.c_str(), SnmpUInt32(nMaskLevel), maskCallback));  // comparioson
-    m_pTable->add(MibWritableEntry(OID_ACTIVATE.c_str(), SnmpUInt32(0), activateCallback));  // comparioson
+    m_pTable->add(MibWritableEntry(OID_MASK.c_str(), SnmpInt32(nMaskLevel), maskCallback));  // comparioson
+    m_pTable->add(MibWritableEntry(OID_ACTIVATE.c_str(), SnmpInt32(0), activateCallback));  // comparioson
 
+
+    m_pTable->add(MibWritableEntry(OID_SILENCE_A_LEG.c_str(), SnmpInt32(-1)));  // silence
+    m_pTable->add(MibWritableEntry(OID_SILENCE_B_LEG.c_str(), SnmpInt32(-1)));  // silence
 
     m_pMib->add(m_pTable);
 
@@ -219,7 +224,30 @@ void AgentThread::ComparisonChanged(bool bSame)
     {
         pml::Log::Get(pml::Log::LOG_WARN)  << "AgentThread\tComparisonChanged:  OID Not Found!" << std::endl;
     }
+}
 
+void AgentThread::SilenceChanged(bool bSilent, int nLeg)
+{
+    std::lock_guard<std::mutex> lg(m_mutex);
+
+    std::string sOid = nLeg==0 ? OID_SILENCE_A_LEG : OID_SILENCE_B_LEG;
+
+    MibWritableEntry* pEntry = m_pTable->get(sOid.c_str(), true);
+    if(pEntry)
+    {
+        int nCurrent(-1);
+        pEntry->get_value(nCurrent);
+        if(nCurrent != static_cast<int>(bSilent))
+        {
+  	        pml::Log::Get(pml::Log::LOG_DEBUG) << "AgentThread\tSilenceChanged: " << bSilent << std::endl;
+            pEntry->set_value(SnmpInt32(bSilent));
+            SendTrap(static_cast<int>(bSilent), sOid);
+        }
+    }
+    else
+    {
+        pml::Log::Get(pml::Log::LOG_WARN)  << "AgentThread\tSilenceChanged:  OID Not Found!" << std::endl;
+    }
 }
 
 void AgentThread::DelayChanged(std::chrono::milliseconds delay)
@@ -265,7 +293,7 @@ void AgentThread::SendTrap(int nValue, const std::string& sOid)
     Vbx* pVbs = new Vbx[1];
     Oidx rdsOid((m_sBaseOid+".2."+sOid).c_str());
 
-    pVbs[0].set_oid((m_sBaseOid+".2."+sOid).c_str());
+    pVbs[0].set_oid((m_sBaseOid+".1."+sOid).c_str());
     pVbs[0].set_value(SnmpInt32(nValue));
 
     NotificationOriginator no;

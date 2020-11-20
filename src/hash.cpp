@@ -41,8 +41,8 @@ hashresult CalculateHash(const std::deque<float>& bufferA, const std::deque<floa
 
     if(nOffsetA+nSampleSize <= vBufferA.size() && nOffsetB+nSampleSize <= vBufferB.size())
     {
-        int nSamplesA(std::max(vBufferA.size()-nOffsetA, vBufferA.size()-nOffsetA));
-        int nSamplesB(std::min(vBufferB.size()-nOffsetB, vBufferB.size()-nOffsetB));
+        int nSamplesA(std::min(vBufferA.size()-nOffsetA, (size_t)48000));
+        int nSamplesB(std::min(vBufferB.size()-nOffsetB, (size_t)48000));
         int nSamples(std::min(nSamplesA, nSamplesB));
 
         pml::Log::Get(pml::Log::LOG_DEBUG) << "CalculateHash\tComparing "<< nSamples << " samples [" << nSamplesA << "," << nSamplesB << "]" << std::endl;
@@ -58,8 +58,10 @@ hashresult CalculateHash(const std::deque<float>& bufferA, const std::deque<floa
 //            std::vector<float> vTempA(vBufferA.begin()+nOffsetA, vBufferA.begin()+nOffsetA+nSamples);
 //            std::vector<float> vTempB(vBufferB.begin()+nOffsetB, vBufferB.begin()+nOffsetB+nSamples);
 
+            //copy and check for silence...
             std::vector<float> vTempA(nSamples);
             std::vector<float> vTempB(nSamples);
+
             for(int i = 0; i < nSamples; i++)
             {
                 vTempA[i] = vBufferA[i+nOffsetA];

@@ -23,7 +23,8 @@ m_sDeviceName(sDeviceName),
 m_nDeviceId(-1),
 m_nSampleRate(nSampleRate),
 m_nSamplesNeeded(maxDelay.count()*m_nSampleRate/500),
-m_nSamplesToHash((minWindow.count()*m_nSampleRate)/1000)
+m_nSamplesToHash((minWindow.count()*m_nSampleRate)/1000),
+m_peak({0.0,0.0})
 {
 
 }
@@ -33,7 +34,8 @@ m_sDeviceName(""),
 m_nDeviceId(nDeviceId),
 m_nSampleRate(nSampleRate),
 m_nSamplesNeeded(maxDelay.count()*m_nSampleRate/500),
-m_nSamplesToHash((minWindow.count()*m_nSampleRate)/1000)
+m_nSamplesToHash((minWindow.count()*m_nSampleRate)/1000),
+m_peak({0.0,0.0})
 {
 }
 
@@ -210,6 +212,10 @@ void Recorder::Callback(const float* pBuffer, size_t nFrameCount)
         {
             m_Buffer.first.push_back(pBuffer[i]);
             m_Buffer.second.push_back(pBuffer[i+1]);
+
+
+            m_peak.first = std::max(std::abs(pBuffer[i]), m_peak.first);
+            m_peak.second = std::max(std::abs(pBuffer[i+1]), m_peak.second);
         }
 
         //do the hash
@@ -227,12 +233,29 @@ bool Recorder::BufferFull()
     return (m_Buffer.first.size() > m_nSamplesNeeded+m_nSamplesToHash);
 }
 
-void Recorder::EmptyBuffer()
+void Recorder::EmptyBuffer(int nOffset)
 {
     //std::lock_guard<std::mutex> lg(m_mutex);
+
+
+    //if(nOffset == 0)
+    //{
     m_Buffer.first.clear();
     m_Buffer.second.clear();
+    m_peak.first = m_peak.second = 0.0;
 
+    //}
+    /*else if(nOffset > 0)
+    {
+        m_Buffer.first.clear();
+        m_Buffer.second.erase(m_Buffer.second.begin(), m_Buffer.second.begin()+nOffset);
+    }
+    else
+    {
+        m_Buffer.second.clear();
+        m_Buffer.first.erase(m_Buffer.first.begin(), m_Buffer.first.begin()+nOffset);
+    }
+    */
     pml::Log::Get(pml::Log::LOG_DEBUG) << "Recorder\tBuffer empty" << std::endl;
 }
 
@@ -249,5 +272,5 @@ std::chrono::milliseconds Recorder::GetMaxDelay()
 
 std::chrono::milliseconds Recorder::GetExpectedTimeToFillBuffer()
 {
-    return std::chrono::milliseconds(((m_nSamplesNeeded+m_nSamplesToHash)*1000/m_nSampleRate)+100); //add 100ms to allow for signalling time etc.
+    return std::chrono::milliseconds(((m_nSamplesNeeded+m_nSamplesToHash)*1000/m_nSampleRate)+200); //add 200ms to allow for signalling time etc.
 }

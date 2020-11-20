@@ -141,6 +141,7 @@ MibWritableEntry* MibWritableTable::GetEntry(Request* req, int ind)
 
 void MibWritableTable::get_request(Request* req, int ind)
 {
+    pml::Log::Get(pml::Log::LOG_TRACE) << "get_request" << std::endl;
     MibWritableEntry* entry = GetEntry(req, ind);
     if(entry)
     {

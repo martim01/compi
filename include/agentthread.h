@@ -37,7 +37,7 @@ class AgentThread
         void ComparisonChanged(bool bSame);
         void DelayChanged(std::chrono::milliseconds delay);
         void OverallChanged(bool bActive);
-
+        void SilenceChanged(bool bSilent, int nLeg);
 
     private:
         void InitTraps();
@@ -68,4 +68,6 @@ class AgentThread
         static const std::string OID_MASK;
         static const std::string OID_ACTIVATE;
         static const std::string OID_OVERALL;
+        static const std::string OID_SILENCE_A_LEG;
+        static const std::string OID_SILENCE_B_LEG;
 };

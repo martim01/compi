@@ -8,6 +8,8 @@
 #include <thread>
 #include <functional>
 #include <snmp_pp/integer.h>
+#include <cmath>
+
 
 Compi::Compi() :
     m_pAgent(nullptr),
@@ -72,6 +74,9 @@ void Compi::SetupRecorder()
     m_nStartDelay = m_iniConfig.GetIniInt("delay", "start", 100);
     m_nMaxDelay = m_iniConfig.GetIniInt("delay", "max", 8000);
     m_nFailures = m_iniConfig.GetIniInt("delay", "failures", 3);
+    m_dSilenceThreshold  = std::pow(10, (m_iniConfig.GetIniDouble("silence", "threshold", -70)/20));
+    m_nSilenceHoldoff  = m_iniConfig.GetIniInt("silence", "holdoff", 30);
+
 
     if(nDevice != -1)
     {
@@ -127,18 +132,29 @@ void Compi::Loop()
 
         //work out how long to wait for before the buffer should be full
         bool bDone = m_pRecorder->GetConditionVariable().wait_for(lck, m_pRecorder->GetExpectedTimeToFillBuffer(), [this]{return m_pRecorder->BufferFull(); });
+
+        hashresult result{0,0.0};
         if(bDone)
         {
-            hashresult result = CalculateHash(m_pRecorder->GetBuffer().first,m_pRecorder->GetBuffer().second, m_pRecorder->GetNumberOfSamplesToHash());
-
-            pml::Log::Get() << "Calculation\tDelay=" <<  (result.first*1000/m_nSampleRate) << "ms\tConfidence=" << result.second << std::endl;
-            if(result.second < 0.5) //could not get lock
+            bool bSilent = CheckSilence(m_pRecorder->GetPeak().first, A_LEG) && CheckSilence(m_pRecorder->GetPeak().second, B_LEG);
+            if(!bSilent)
             {
-                HandleNoLock();
+                result = CalculateHash(m_pRecorder->GetBuffer().first,m_pRecorder->GetBuffer().second, m_pRecorder->GetNumberOfSamplesToHash());
+
+                pml::Log::Get() << "Calculation\tDelay=" <<  (result.first*1000/m_nSampleRate) << "ms\tConfidence=" << result.second << std::endl;
+                if(result.second < 0.5) //could not get lock
+                {
+                    HandleNoLock();
+                }
+                else
+                {
+                    HandleLock(result);
+                }
             }
             else
             {
-                HandleLock(result);
+                result = {0,1.0};
+                pml::Log::Get() << "Both channels silent" << std::endl;
             }
             UpdateSNMP(result);
         }
@@ -152,7 +168,7 @@ void Compi::Loop()
 
 
         //get the recorder to start filling up again
-        m_pRecorder->EmptyBuffer();
+        m_pRecorder->EmptyBuffer(result.first);
     }
     pml::Log::Get() << "Compi\tExiting...." << std::endl;
 }
@@ -199,7 +215,7 @@ int Compi::Run(const std::string& sPath)
 
 bool Compi::MaskCallback(Snmp_pp::SnmpSyntax* pValue, int nSyntax)
 {
-    Snmp_pp::SnmpUInt32* pInt = dynamic_cast<Snmp_pp::SnmpUInt32*>(pValue);
+    Snmp_pp::SnmpInt32* pInt = dynamic_cast<Snmp_pp::SnmpInt32*>(pValue);
     if(!pInt)
     {
         pml::Log::Get(pml::Log::LOG_WARN) << "Could not dynamic cast!" << std::endl;
@@ -233,7 +249,7 @@ bool Compi::MaskCallback(Snmp_pp::SnmpSyntax* pValue, int nSyntax)
 
 bool Compi::ActivateCallback(Snmp_pp::SnmpSyntax* pValue, int nSyntax)
 {
-    Snmp_pp::SnmpUInt32* pInt = dynamic_cast<Snmp_pp::SnmpUInt32*>(pValue);
+    Snmp_pp::SnmpInt32* pInt = dynamic_cast<Snmp_pp::SnmpInt32*>(pValue);
     if(!pInt)
     {
         pml::Log::Get() << "Could not dynamic cast!" << std::endl;
@@ -257,4 +273,31 @@ bool Compi::ActivateCallback(Snmp_pp::SnmpSyntax* pValue, int nSyntax)
     {
         return false;
     }
+}
+
+
+bool Compi::CheckSilence(float dPeak, enumLeg eLeg)
+{
+    if(dPeak < m_dSilenceThreshold)
+    {
+        if(!m_bSilent[eLeg])
+        {
+            m_bSilent[eLeg] = true;
+            m_tpSilence[eLeg] = std::chrono::system_clock::now();
+        }
+        else
+        {
+            auto secondsSilent = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now()-m_tpSilence[eLeg]);
+            if(secondsSilent.count() > m_nSilenceHoldoff)
+            {
+                m_pAgent->SilenceChanged(true, eLeg);
+            }
+        }
+    }
+    else if(m_bSilent[eLeg])
+    {
+        m_bSilent[eLeg] = false;
+        m_pAgent->SilenceChanged(false, eLeg);
+    }
+    return m_bSilent[eLeg];
 }
