@@ -20,6 +20,9 @@ Compi::Compi() :
     m_nFailures(3),
     m_nFailureCount(0),
     m_bSendOnActiveOnly(false),
+    m_dSilenceThreshold(-70),
+    m_nSilenceHoldoff(30),
+    m_nSilent{-1,-1},
     m_nMask(FOLLOW_ACTIVE),
     m_bActive(false)
 {
@@ -136,8 +139,9 @@ void Compi::Loop()
         hashresult result{0,0.0};
         if(bDone)
         {
-            bool bSilent = CheckSilence(m_pRecorder->GetPeak().first, A_LEG) && CheckSilence(m_pRecorder->GetPeak().second, B_LEG);
-            if(!bSilent)
+            bool bSilentA = CheckSilence(m_pRecorder->GetPeak().first, A_LEG);
+            bool bSilentB = CheckSilence(m_pRecorder->GetPeak().second, B_LEG);
+            if(!bSilentA || !bSilentB)
             {
                 result = CalculateHash(m_pRecorder->GetBuffer().first,m_pRecorder->GetBuffer().second, m_pRecorder->GetNumberOfSamplesToHash());
 
@@ -280,9 +284,9 @@ bool Compi::CheckSilence(float dPeak, enumLeg eLeg)
 {
     if(dPeak < m_dSilenceThreshold)
     {
-        if(!m_bSilent[eLeg])
+        if(m_nSilent[eLeg] != 1)
         {
-            m_bSilent[eLeg] = true;
+            m_nSilent[eLeg] = 1;
             m_tpSilence[eLeg] = std::chrono::system_clock::now();
         }
         else
@@ -294,10 +298,10 @@ bool Compi::CheckSilence(float dPeak, enumLeg eLeg)
             }
         }
     }
-    else if(m_bSilent[eLeg])
+    else if(m_nSilent[eLeg] != 0)
     {
-        m_bSilent[eLeg] = false;
+        m_nSilent[eLeg] = 0;
         m_pAgent->SilenceChanged(false, eLeg);
     }
-    return m_bSilent[eLeg];
+    return (m_nSilent[eLeg] == 1);
 }

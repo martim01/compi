@@ -239,7 +239,7 @@ void AgentThread::SilenceChanged(bool bSilent, int nLeg)
         pEntry->get_value(nCurrent);
         if(nCurrent != static_cast<int>(bSilent))
         {
-  	        pml::Log::Get(pml::Log::LOG_DEBUG) << "AgentThread\tSilenceChanged: " << bSilent << std::endl;
+  	        pml::Log::Get(pml::Log::LOG_DEBUG) << "AgentThread\tSilenceChanged: " << nLeg << "=" << bSilent << std::endl;
             pEntry->set_value(SnmpInt32(bSilent));
             SendTrap(static_cast<int>(bSilent), sOid);
         }

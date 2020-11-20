@@ -51,7 +51,7 @@ class Compi
 
         float m_dSilenceThreshold;
         int m_nSilenceHoldoff;
-        bool m_bSilent[2];
+        int m_nSilent[2];
         std::chrono::time_point<std::chrono::system_clock> m_tpSilence[2];
 
         std::atomic<int> m_nMask;
