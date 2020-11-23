@@ -24,7 +24,8 @@ Compi::Compi() :
     m_nSilenceHoldoff(30),
     m_nSilent{-1,-1},
     m_nMask(FOLLOW_ACTIVE),
-    m_bActive(false)
+    m_bActive(false),
+    m_bLocked(false)
 {
 
 }
@@ -83,12 +84,14 @@ void Compi::SetupRecorder()
 
     if(nDevice != -1)
     {
-        m_pRecorder = std::make_shared<Recorder>(nDevice,m_nSampleRate, std::chrono::milliseconds(m_nStartDelay), std::chrono::milliseconds(m_iniConfig.GetIniInt("comparison","window",100)));
+        m_pRecorder = std::make_shared<Recorder>(nDevice,m_nSampleRate, std::chrono::milliseconds(m_nStartDelay),
+            std::chrono::milliseconds(m_nMaxDelay), std::chrono::milliseconds(m_iniConfig.GetIniInt("comparison","window",250)));
 
     }
     else
     {
-        m_pRecorder = std::make_shared<Recorder>(m_iniConfig.GetIniString("recorder", "device", "default"),m_nSampleRate, std::chrono::milliseconds(m_nStartDelay), std::chrono::milliseconds(m_iniConfig.GetIniInt("comparison","window",100)));
+        m_pRecorder = std::make_shared<Recorder>(m_iniConfig.GetIniString("recorder", "device", "default"),m_nSampleRate, std::chrono::milliseconds(m_nStartDelay),
+        std::chrono::milliseconds(m_nMaxDelay), std::chrono::milliseconds(m_iniConfig.GetIniInt("comparison","window",250)));
 
     }
     m_pRecorder->Init();
@@ -97,34 +100,40 @@ void Compi::SetupRecorder()
 
 void Compi::HandleNoLock()
 {
-    m_nFailureCount++;
-    pml::Log::Get() << "No match for " << m_nFailureCount  << " calculations since last increase of delay" << std::endl;
+    if(m_bLocked)
+    {
+
+        m_nFailureCount++;
+        pml::Log::Get() << "Compi\tNo match for " << m_nFailureCount  << " calculations since last increase of delay" << std::endl;
+    }
+    else
+    {   //if we've already lost the lock then don't bother chekcing x times before moving on
+        m_nFailureCount = m_nFailures;
+    }
+
     if(m_nFailureCount >= m_nFailures)
     {
+        size_t nDelay = m_pRecorder->Locked(false, 0);
+        pml::Log::Get() << "Compi\tExceeded max lock failures. Set lock to false and increase window to " << nDelay << "ms" << std::endl;
+        m_bLocked = false;
+
         m_nFailureCount = 0;
-        if(m_pRecorder->GetMaxDelay() < std::chrono::milliseconds(m_nMaxDelay))
-        {
-            m_pRecorder->SetMaxDelay(m_pRecorder->GetMaxDelay()*2);
-            pml::Log::Get() << "Increase Max Delay: " << m_pRecorder->GetMaxDelay().count() << std::endl;
-        }
-        else
-        {
-            m_pRecorder->SetMaxDelay(std::chrono::milliseconds(m_nStartDelay));
-            pml::Log::Get() << "Reset Max Delay: " << m_pRecorder->GetMaxDelay().count() << std::endl;
-        }
     }
 }
 
-void Compi::HandleLock(const hashresult& result)
+bool Compi::HandleLock(const hashresult& result)
 {
     m_nFailureCount = 0;
 
-    auto delay = std::chrono::milliseconds((abs(result.first*1000)/m_nSampleRate)+100);
-    if(delay != m_pRecorder->GetMaxDelay())
+    if(!m_bLocked)
     {
-        m_pRecorder->SetMaxDelay(delay);
-        pml::Log::Get() << "Lock: Set Max Delay: " << m_pRecorder->GetMaxDelay().count() << std::endl;
+        size_t nDelay = m_pRecorder->Locked(true, result.first);
+        pml::Log::Get(pml::Log::LOG_INFO) << "Compi\tLocked. Window: " << nDelay << "ms" << std::endl;
+        m_bLocked = true;
+
+        return true;
     }
+    return false;
 }
 
 void Compi::Loop()
@@ -136,55 +145,61 @@ void Compi::Loop()
         //work out how long to wait for before the buffer should be full
         bool bDone = m_pRecorder->GetConditionVariable().wait_for(lck, m_pRecorder->GetExpectedTimeToFillBuffer(), [this]{return m_pRecorder->BufferFull(); });
 
+
         hashresult result{0,0.0};
         if(bDone)
         {
+            bool bJustLocked(false);
+
             bool bSilentA = CheckSilence(m_pRecorder->GetPeak().first, A_LEG);
             bool bSilentB = CheckSilence(m_pRecorder->GetPeak().second, B_LEG);
             if(!bSilentA || !bSilentB)
             {
-                result = CalculateHash(m_pRecorder->GetBuffer().first,m_pRecorder->GetBuffer().second, m_pRecorder->GetNumberOfSamplesToHash());
+                deinterlacedBuffer buffer(m_pRecorder->CreateBuffer());
+                result = CalculateHash(buffer.first,buffer.second, m_pRecorder->GetNumberOfSamplesToHash(), m_bLocked);
 
-                pml::Log::Get() << "Calculation\tDelay=" <<  (result.first*1000/m_nSampleRate) << "ms\tConfidence=" << result.second << std::endl;
+                pml::Log::Get() << "Compi\tCalculation\tDelay=" <<  (result.first*1000/m_nSampleRate) << "ms\tConfidence=" << result.second << std::endl;
                 if(result.second < 0.5) //could not get lock
                 {
                     HandleNoLock();
                 }
                 else
                 {
-                    HandleLock(result);
+                    bJustLocked = HandleLock(result);
                 }
             }
             else
             {
                 result = {0,1.0};
-                pml::Log::Get() << "Both channels silent" << std::endl;
+                pml::Log::Get() << "Compi\tBoth channels silent" << std::endl;
             }
-            UpdateSNMP(result);
+            UpdateSNMP(result, bJustLocked);
         }
         else
         {
-            pml::Log::Get(pml::Log::LOG_ERROR) << "Buffer taking longer to fill than expected!" << std::endl;
+            pml::Log::Get(pml::Log::LOG_ERROR) << "Compi\tBuffer taking longer to fill than expected!" << std::endl;
             m_pAgent->AudioChanged(0);
             m_pAgent->ComparisonChanged(-1);
             m_pAgent->DelayChanged(std::chrono::milliseconds(0));
         }
 
 
-        //get the recorder to start filling up again
-        m_pRecorder->EmptyBuffer(result.first);
+        m_pRecorder->CompiReady();
     }
     pml::Log::Get() << "Compi\tExiting...." << std::endl;
 }
 
-void Compi::UpdateSNMP(const hashresult& result)
+void Compi::UpdateSNMP(const hashresult& result, bool bJustLocked)
 {
     if(m_nMask == FORCE_ON || (m_nMask == FOLLOW_ACTIVE && m_bActive) || !m_bSendOnActiveOnly)
     {
         //send the traps
         m_pAgent->AudioChanged(1);  //audio must be okay as we are here
         m_pAgent->ComparisonChanged(result.second > 0.6);
-        m_pAgent->DelayChanged(std::chrono::milliseconds(result.first*1000/m_nSampleRate));
+        if(bJustLocked)
+        {
+            m_pAgent->DelayChanged(std::chrono::milliseconds(result.first*1000/m_nSampleRate));
+        }
     }
 }
 
@@ -203,7 +218,7 @@ int Compi::Run(const std::string& sPath)
     {
         SetupLogging();
 
-        pml::Log::Get(pml::Log::LOG_INFO) << "compi started" << std::endl;
+        pml::Log::Get(pml::Log::LOG_INFO) << "Compi\tcompi started" << std::endl;
 
         SetupAgent();
         SetupRecorder();
@@ -222,7 +237,7 @@ bool Compi::MaskCallback(Snmp_pp::SnmpSyntax* pValue, int nSyntax)
     Snmp_pp::SnmpInt32* pInt = dynamic_cast<Snmp_pp::SnmpInt32*>(pValue);
     if(!pInt)
     {
-        pml::Log::Get(pml::Log::LOG_WARN) << "Could not dynamic cast!" << std::endl;
+        pml::Log::Get(pml::Log::LOG_WARN) << "Compi\tCould not dynamic cast!" << std::endl;
     }
 
     if(pInt && *pInt < 3)
@@ -242,7 +257,7 @@ bool Compi::MaskCallback(Snmp_pp::SnmpSyntax* pValue, int nSyntax)
 
         }
 
-        pml::Log::Get() << "SNMP mask set to " << m_nMask << std::endl;
+        pml::Log::Get() << "Compi\tSNMP mask set to " << m_nMask << std::endl;
         return true;
     }
     else

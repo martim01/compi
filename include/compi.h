@@ -31,8 +31,8 @@ class Compi
         void Loop();
 
         void HandleNoLock();
-        void HandleLock(const hashresult& result);
-        void UpdateSNMP(const hashresult& result);
+        bool HandleLock(const hashresult& result);
+        void UpdateSNMP(const hashresult& result, bool bJustLocked);
         void ClearSNMP();
 
         enum enumLeg{A_LEG=0, B_LEG=1};
@@ -56,6 +56,8 @@ class Compi
 
         std::atomic<int> m_nMask;
         std::atomic<bool> m_bActive;
+
+        bool m_bLocked;
 
         enum { FORCE_OFF, FOLLOW_ACTIVE,FORCE_ON};
 };

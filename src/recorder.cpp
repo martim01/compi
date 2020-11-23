@@ -18,24 +18,34 @@ int paCallback( const void *input, void *output, unsigned long frameCount, const
 }
 
 
-Recorder::Recorder(const std::string& sDeviceName, unsigned long nSampleRate, const std::chrono::milliseconds& maxDelay, const std::chrono::milliseconds& minWindow) :
+Recorder::Recorder(const std::string& sDeviceName, unsigned long nSampleRate, const std::chrono::milliseconds& startDelay, const std::chrono::milliseconds& maxDelay, const std::chrono::milliseconds& minWindow) :
 m_sDeviceName(sDeviceName),
 m_nDeviceId(-1),
 m_nSampleRate(nSampleRate),
-m_nSamplesNeeded(maxDelay.count()*m_nSampleRate/500),
+m_nStartSamplesForDelay(startDelay.count()*m_nSampleRate/500),
+m_nSamplesForDelay(m_nStartSamplesForDelay),
+m_nMaxSamplesForDelay(maxDelay.count()*m_nSampleRate/500),
 m_nSamplesToHash((minWindow.count()*m_nSampleRate)/1000),
-m_peak({0.0,0.0})
+m_peak({0.0,0.0}),
+m_nOffset(0),
+m_bLocked(false),
+m_bReady(true)
 {
 
 }
 
-Recorder::Recorder(unsigned short nDeviceId, unsigned long nSampleRate, const std::chrono::milliseconds& maxDelay, const std::chrono::milliseconds& minWindow) :
+Recorder::Recorder(unsigned short nDeviceId, unsigned long nSampleRate, const std::chrono::milliseconds& startDelay, const std::chrono::milliseconds& maxDelay, const std::chrono::milliseconds& minWindow) :
 m_sDeviceName(""),
 m_nDeviceId(nDeviceId),
 m_nSampleRate(nSampleRate),
-m_nSamplesNeeded(maxDelay.count()*m_nSampleRate/500),
+m_nStartSamplesForDelay(startDelay.count()*m_nSampleRate/500),
+m_nSamplesForDelay(m_nStartSamplesForDelay),
+m_nMaxSamplesForDelay(maxDelay.count()*m_nSampleRate/500),
 m_nSamplesToHash((minWindow.count()*m_nSampleRate)/1000),
-m_peak({0.0,0.0})
+m_peak({0.0,0.0}),
+m_nOffset(0),
+m_bLocked(false),
+m_bReady(true)
 {
 }
 
@@ -124,6 +134,8 @@ bool Recorder::InitPortAudio()
 
         m_nSampleRate = pInfo->sampleRate;
     }
+
+    pml::Log::Get(pml::Log::LOG_INFO)  << "Recorder\tSamplesToHash=" << m_nSamplesToHash << std::endl;
     return true;
 }
 
@@ -179,7 +191,7 @@ bool Recorder::StartRecording()
         pml::Log::Get(pml::Log::LOG_CRITICAL)  << "Recorder\tUnable to start stream: " << Pa_GetErrorText(err) << std::endl;;
         return false;
     }
-    pml::Log::Get(pml::Log::LOG_INFO) << "Recording started" << std::endl;
+    pml::Log::Get(pml::Log::LOG_INFO) << "Recorder\tRecording started" << std::endl;
     return true;
 
 }
@@ -201,26 +213,32 @@ void Recorder::Callback(const float* pBuffer, size_t nFrameCount)
         pml::Log::Get(pml::Log::LOG_ERROR) << "Recorder\tMissing frames" << std::endl;
     }
 
-    std::lock_guard<std::mutex> lg(m_mutex);
+    std::lock_guard<std::mutex> lg(m_mutexInternal);
 
 
-    if(m_Buffer.first.size() < m_nSamplesNeeded+m_nSamplesToHash)
+    //store the audio
+    m_peak = {0.0,0.0};
+    for(size_t i = 0; i < nFrameCount*CHANNELS; i+=CHANNELS)
     {
+        m_Buffer.first.push_back(pBuffer[i]);
+        m_Buffer.second.push_back(pBuffer[i+1]);
 
-        //store the audio
-        for(size_t i = 0; i < nFrameCount*CHANNELS; i+=CHANNELS)
+
+        m_peak.first = std::max(std::abs(pBuffer[i]), m_peak.first);
+        m_peak.second = std::max(std::abs(pBuffer[i+1]), m_peak.second);
+    }
+
+    pml::Log::Get(pml::Log::LOG_DEBUG) << "Recorder\tCallback\tReady: " << m_bReady
+                                       <<"\tBuffer: " << std::min(m_Buffer.first.size(), m_Buffer.second.size())
+                                       << "\tNeeded: " << (m_nSamplesForDelay+m_nSamplesToHash+abs(m_nOffset)) << std::endl;
+
+    if(m_bReady)
+    {
+        if((m_nOffset < 0 && m_Buffer.first.size() > m_nSamplesForDelay+m_nSamplesToHash+abs(m_nOffset)) ||
+           (m_nOffset >= 0 && m_Buffer.second.size() > m_nSamplesForDelay+m_nSamplesToHash+abs(m_nOffset)))
         {
-            m_Buffer.first.push_back(pBuffer[i]);
-            m_Buffer.second.push_back(pBuffer[i+1]);
-
-
-            m_peak.first = std::max(std::abs(pBuffer[i]), m_peak.first);
-            m_peak.second = std::max(std::abs(pBuffer[i+1]), m_peak.second);
-        }
-
-        //do the hash
-        if(m_Buffer.first.size() >= m_nSamplesNeeded+m_nSamplesToHash)
-        {
+            m_bReady = false;
+            pml::Log::Get(pml::Log::LOG_TRACE) << "Recorder\tBufferA=" << m_Buffer.first.size() << "\tBufferB=" << m_Buffer.second.size() << std::endl;
             m_cv.notify_one();
         }
     }
@@ -229,48 +247,91 @@ void Recorder::Callback(const float* pBuffer, size_t nFrameCount)
 
 bool Recorder::BufferFull()
 {
-    //std::lock_guard<std::mutex> lg(m_mutex);
-    return (m_Buffer.first.size() > m_nSamplesNeeded+m_nSamplesToHash);
+    std::lock_guard<std::mutex> lg(m_mutexInternal);
+    return (m_bReady == false);
 }
 
-void Recorder::EmptyBuffer(int nOffset)
+void Recorder::CompiReady()
 {
-    //std::lock_guard<std::mutex> lg(m_mutex);
-
-
-    //if(nOffset == 0)
-    //{
-    m_Buffer.first.clear();
-    m_Buffer.second.clear();
+    std::lock_guard<std::mutex> lg(m_mutexInternal);
     m_peak.first = m_peak.second = 0.0;
-
-    //}
-    /*else if(nOffset > 0)
-    {
-        m_Buffer.first.clear();
-        m_Buffer.second.erase(m_Buffer.second.begin(), m_Buffer.second.begin()+nOffset);
-    }
-    else
-    {
-        m_Buffer.second.clear();
-        m_Buffer.first.erase(m_Buffer.first.begin(), m_Buffer.first.begin()+nOffset);
-    }
-    */
-    pml::Log::Get(pml::Log::LOG_DEBUG) << "Recorder\tBuffer empty" << std::endl;
+    m_bReady = true;
+    pml::Log::Get(pml::Log::LOG_DEBUG) << "Recorder\tCompi Ready" << std::endl;
 }
 
-void Recorder::SetMaxDelay(const std::chrono::milliseconds& maxDelay)
-{
-    m_nSamplesNeeded = maxDelay.count()*m_nSampleRate/500;
-}
 
 std::chrono::milliseconds Recorder::GetMaxDelay()
 {
-    return std::chrono::milliseconds(m_nSamplesNeeded*500/m_nSampleRate);
+    return std::chrono::milliseconds((m_nSamplesForDelay+m_nSamplesToHash+abs(m_nOffset))*500/m_nSampleRate);
 }
 
 
 std::chrono::milliseconds Recorder::GetExpectedTimeToFillBuffer()
 {
-    return std::chrono::milliseconds(((m_nSamplesNeeded+m_nSamplesToHash)*1000/m_nSampleRate)+200); //add 200ms to allow for signalling time etc.
+    return std::chrono::milliseconds(((m_nSamplesForDelay+m_nSamplesToHash)*1000/m_nSampleRate)+2000); //add 2seconds to allow for things not working right
+}
+
+size_t Recorder::Locked(bool bLocked, long nOffset)
+{
+    pml::Log::Get(pml::Log::LOG_DEBUG) << "Recorder\tLocked: " << bLocked<<"\tOffset=" << nOffset << std::endl;
+
+    if(bLocked && m_bLocked == false)
+    {
+        m_nSamplesForDelay = m_nStartSamplesForDelay;
+        m_nOffset = nOffset;
+  }
+    else if(!bLocked)
+    {
+        m_nSamplesForDelay = std::min(std::max(m_nSamplesForDelay, (size_t)m_nOffset)*2, m_nMaxSamplesForDelay);
+
+        m_nOffset = 0;
+        m_Buffer.first.clear();
+        m_Buffer.second.clear();
+    }
+
+
+    m_bLocked = bLocked;
+
+    return GetMaxDelay().count();
+
+}
+
+deinterlacedBuffer Recorder::CreateBuffer()
+{
+    std::lock_guard<std::mutex> lg(m_mutexInternal);
+
+    size_t nA,nB;
+    if(m_nOffset == 0)
+    {
+        nA = m_Buffer.first.size()-(m_nSamplesForDelay+m_nSamplesToHash);
+        nB = m_Buffer.second.size()-(m_nSamplesForDelay+m_nSamplesToHash);
+
+    }
+    else if(m_nOffset < 0)
+    {
+        nA = m_Buffer.first.size()-(m_nSamplesForDelay+m_nSamplesToHash-m_nOffset);
+        nB = m_Buffer.second.size()-(m_nSamplesForDelay+m_nSamplesToHash);
+    }
+    else
+    {
+        nA = m_Buffer.first.size()-(m_nSamplesForDelay+m_nSamplesToHash);
+        nB = m_Buffer.second.size()-(m_nSamplesForDelay+m_nSamplesToHash+m_nOffset);
+    }
+    pml::Log::Get(pml::Log::LOG_TRACE) << "Recorder\tGetBuffer: A=" << m_Buffer.first.size() << "\tnB=" << m_Buffer.second.size() << std::endl;
+    pml::Log::Get(pml::Log::LOG_TRACE) << "Recorder\tGetBuffer: nA=" << nA << "\tnB=" << nB << std::endl;
+
+    m_Buffer.first.erase(m_Buffer.first.begin(), m_Buffer.first.begin()+nA);
+    m_Buffer.second.erase(m_Buffer.second.begin(), m_Buffer.second.begin()+nB);
+
+    pml::Log::Get(pml::Log::LOG_TRACE) << "Recorder\tGetBuffer: A=" << m_Buffer.first.size() << "\tnB=" << m_Buffer.second.size() << std::endl;
+
+    return std::make_pair(std::deque<float>(m_Buffer.first.begin(), m_Buffer.first.begin()+(m_nSamplesForDelay+m_nSamplesToHash)),
+                          std::deque<float>(m_Buffer.second.begin(), m_Buffer.second.begin()+(m_nSamplesForDelay+m_nSamplesToHash)));
+}
+
+
+const peak& Recorder::GetPeak()
+{
+    std::lock_guard<std::mutex> lg(m_mutexInternal);
+    return m_peak;
 }

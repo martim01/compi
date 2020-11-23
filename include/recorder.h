@@ -14,8 +14,8 @@ class Recorder
 {
     public:
 
-        Recorder(const std::string& sDeviceName, unsigned long nSampleRate, const std::chrono::milliseconds& maxDelay, const std::chrono::milliseconds& minWindow);
-        Recorder(unsigned short nDeviceId, unsigned long nSampleRate, const std::chrono::milliseconds& maxDelay, const std::chrono::milliseconds& minWindow);
+        Recorder(const std::string& sDeviceName, unsigned long nSampleRate, const std::chrono::milliseconds& startDelay, const std::chrono::milliseconds& maxDelay, const std::chrono::milliseconds& minWindow);
+        Recorder(unsigned short nDeviceId, unsigned long nSampleRate, const std::chrono::milliseconds& startDelay, const std::chrono::milliseconds& maxDelay, const std::chrono::milliseconds& minWindow);
 
         bool Init();
         void Exit();
@@ -26,13 +26,12 @@ class Recorder
         std::condition_variable& GetConditionVariable() { return m_cv; }
 
         bool BufferFull();
-        void EmptyBuffer(int nOffset);
+        void CompiReady();
 
-        const deinterlacedBuffer& GetBuffer() const
-        {   return m_Buffer; }
+        deinterlacedBuffer CreateBuffer();
 
-        const peak& GetPeak() const
-        { return m_peak;    }
+        const peak& GetPeak();
+
 
 
         size_t GetNumberOfSamplesToHash() const
@@ -40,7 +39,8 @@ class Recorder
             return m_nSamplesToHash;
         }
 
-        void SetMaxDelay(const std::chrono::milliseconds& maxDelay);
+        size_t Locked(bool bLocked, long nOffset);
+
         std::chrono::milliseconds GetMaxDelay();
         std::chrono::milliseconds GetExpectedTimeToFillBuffer();
 
@@ -57,7 +57,9 @@ class Recorder
         unsigned long m_nSampleRate;
         unsigned short m_nChannels;
 
-        size_t m_nSamplesNeeded;
+        size_t m_nStartSamplesForDelay;
+        size_t m_nSamplesForDelay;
+        size_t m_nMaxSamplesForDelay;
 
         PaStream* m_pStream;                ///< pointer to the PaStream tha reads in the audio
         bool m_bLoop;
@@ -66,12 +68,19 @@ class Recorder
 
         unsigned int m_nSamplesToHash;
 
+        size_t m_nTotalSamples;
+
         deinterlacedBuffer m_Buffer;
 
         std::mutex m_mutex;
+        std::mutex m_mutexInternal;
         std::condition_variable m_cv;
 
         peak m_peak;
+
+        std::atomic<long> m_nOffset;
+        std::atomic<bool> m_bLocked;
+        std::atomic<bool> m_bReady;
 
         static const unsigned short CHANNELS =2;
 };
