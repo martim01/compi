@@ -23,11 +23,6 @@
 */
 
 #include "audiophash.h"
-#include <samplerate.h>
-#include <sndfile.h>
-#ifdef HAVE_LIBMPG123
-#include <mpg123.h>
-#endif
 
 
 uint32_t *ph_audiohash(float *buf, int N, int sr, int &nb_frames) {
