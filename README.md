@@ -26,4 +26,57 @@ Audio offset and comparison tool
 * [pml_log](https://github.com/martim01/log) - included as a Git submodule
 
 ## Building compi
-todo
+You first need to make sure the correct build tools are installed
+* cmake 
+* pkg-config 
+* autoconf
+```
+sudo apt install cmake pkg-config autoconf
+```
+Next download snmp++ and agent++ either from the website or from the command line
+```
+wget https://agentpp.com/download/snmp++-3.4.2.tar.gz
+wget https://agentpp.com/download/agent++-4.2.0.tar.gz
+```
+Note the latest version of agent++ will not compile with SNMPv3 support disabled.
+
+Extract the tar.gz files and build each library
+```
+tar -xf snmp++-3.4.2.tar.gz
+cd snmp++-3.4.2.tar.gz
+./configure --disable-snmpv3
+make
+sudo make install
+```
+```
+tar -xf agent++-4.2.0.tar.gz
+cd agent++-4.2.0.tar.gz
+./configure
+make
+sudo make install
+```
+
+Install the portaudio library
+```
+sudo apt install portaudio19-dev
+```
+
+
+Enter the **compi** directory, create a **build** directory and run CMake
+```
+cd compi
+mkdir build
+cd build
+cmake ..
+make
+sudo make install
+```
+This will 
+* build **compi** 
+* install it in **/usr/local/bin** 
+* copy the **compi.ini** configuration file from **compi/config** to **/usr/local/etc**
+
+To run
+```
+compi /usr/local/etc
+```
