@@ -160,7 +160,7 @@ short Recorder::GetDeviceId(const std::string& sDeviceName)
         }
         else
         {
-            pml::Log::Get(pml::Log::LOG_INFO) << "Recorder\tInput " << i << " is called " <<  pDevInfo->name << std::endl;
+            pml::Log::Get(pml::Log::LOG_INFO) << "Recorder\tInput " << i << " is called " <<  std::string(pDevInfo->name) << std::endl;
         }
     }
     return -1;
@@ -228,9 +228,6 @@ void Recorder::Callback(const float* pBuffer, size_t nFrameCount)
         m_peak.second = std::max(std::abs(pBuffer[i+1]), m_peak.second);
     }
 
-    pml::Log::Get(pml::Log::LOG_DEBUG) << "Recorder\tCallback\tReady: " << m_bReady
-                                       <<"\tBuffer: " << std::min(m_Buffer.first.size(), m_Buffer.second.size())
-                                       << "\tNeeded: " << (m_nSamplesForDelay+m_nSamplesToHash+abs(m_nOffset)) << std::endl;
 
     if(m_bReady)
     {
@@ -317,13 +314,10 @@ deinterlacedBuffer Recorder::CreateBuffer()
         nA = m_Buffer.first.size()-(m_nSamplesForDelay+m_nSamplesToHash);
         nB = m_Buffer.second.size()-(m_nSamplesForDelay+m_nSamplesToHash+m_nOffset);
     }
-    pml::Log::Get(pml::Log::LOG_TRACE) << "Recorder\tGetBuffer: A=" << m_Buffer.first.size() << "\tnB=" << m_Buffer.second.size() << std::endl;
-    pml::Log::Get(pml::Log::LOG_TRACE) << "Recorder\tGetBuffer: nA=" << nA << "\tnB=" << nB << std::endl;
 
     m_Buffer.first.erase(m_Buffer.first.begin(), m_Buffer.first.begin()+nA);
     m_Buffer.second.erase(m_Buffer.second.begin(), m_Buffer.second.begin()+nB);
 
-    pml::Log::Get(pml::Log::LOG_TRACE) << "Recorder\tGetBuffer: A=" << m_Buffer.first.size() << "\tnB=" << m_Buffer.second.size() << std::endl;
 
     return std::make_pair(std::deque<float>(m_Buffer.first.begin(), m_Buffer.first.begin()+(m_nSamplesForDelay+m_nSamplesToHash)),
                           std::deque<float>(m_Buffer.second.begin(), m_Buffer.second.begin()+(m_nSamplesForDelay+m_nSamplesToHash)));

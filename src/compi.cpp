@@ -117,7 +117,6 @@ void Compi::HandleNoLock()
         pml::Log::Get() << "Compi\tExceeded max lock failures. Set lock to false and increase window to " << nDelay << "ms" << std::endl;
         m_bLocked = false;
 
-        m_nFailureCount = 0;
     }
 }
 
@@ -170,6 +169,7 @@ void Compi::Loop()
             }
             else
             {
+                m_nFailureCount = 0;
                 result = {0,1.0};
                 pml::Log::Get() << "Compi\tBoth channels silent" << std::endl;
             }
@@ -195,7 +195,16 @@ void Compi::UpdateSNMP(const hashresult& result, bool bJustLocked)
     {
         //send the traps
         m_pAgent->AudioChanged(1);  //audio must be okay as we are here
-        m_pAgent->ComparisonChanged(result.second > 0.6);
+        //we only say comparison has failed if it has failed for more than the max failures we are allowing
+        if(m_nFailureCount >= m_nFailures)
+        {
+            m_pAgent->ComparisonChanged(0);
+            m_nFailureCount = 0;
+        }
+        else
+        {
+            m_pAgent->ComparisonChanged(1);
+        }
         if(bJustLocked)
         {
             m_pAgent->DelayChanged(std::chrono::milliseconds(result.first*1000/m_nSampleRate));

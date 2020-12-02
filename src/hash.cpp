@@ -24,7 +24,7 @@ hashresult CalculateHash(const std::deque<float>& bufferA, const std::deque<floa
     size_t nOffsetA(0);
     size_t nOffsetB(0);
 
-    if(!bLocked)
+    //if(!bLocked)
     {
         result.first = CalculateOffset(vBufferA, vBufferB);
         if(result.first < 0)
