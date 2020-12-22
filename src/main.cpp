@@ -3,7 +3,8 @@
 #include <signal.h>
 #include "compi.h"
 #include "agentthread.h"
-
+#include <execinfo.h>
+#include <unistd.h>
 
 static void sig(int signo)
 {
@@ -11,8 +12,16 @@ static void sig(int signo)
         {
             case SIGSEGV:
             {
-                pml::Log::Get(pml::Log::LOG_CRITICAL)  << "Segmentation fault, aborting." << std::endl;
-                exit(1);
+                void* arr[10];
+                size_t nSize = backtrace(arr, 10);
+
+                pml::Log::Get(pml::Log::LOG_CRITICAL)  << "Segmentation fault, aborting. " << nSize << std::endl;
+                for(size_t i = 0; i < nSize; i++)
+                {
+                    pml::Log::Get(pml::Log::LOG_CRITICAL)  << std::hex << "0x" << reinterpret_cast<int>(arr[i]) <<std::endl;
+                }
+
+                _exit(1);
             }
         case SIGTERM:
         case SIGINT:

@@ -9,3 +9,6 @@ extern hashresult CalculateHash(const std::deque<float>& vBufferA, const std::de
 
 extern int CalculateOffset(std::vector<float> vBufferA, std::vector<float> vBufferB);
 
+extern bool CheckForTone(std::vector<float> vBufferA, std::vector<float> vBufferB);
+
+

@@ -34,6 +34,7 @@ class Compi
         bool HandleLock(const hashresult& result);
         void UpdateSNMP(const hashresult& result, bool bJustLocked);
         void ClearSNMP();
+        void LogHeartbeat();
 
         enum enumLeg{A_LEG=0, B_LEG=1};
         bool CheckSilence(float dPeak, enumLeg eLeg);
@@ -53,6 +54,8 @@ class Compi
         int m_nSilenceHoldoff;
         int m_nSilent[2];
         std::chrono::time_point<std::chrono::system_clock> m_tpSilence[2];
+        std::chrono::time_point<std::chrono::system_clock> m_tpLogBeat;
+        std::chrono::time_point<std::chrono::system_clock> m_tpStart;
 
         std::atomic<int> m_nMask;
         std::atomic<bool> m_bActive;

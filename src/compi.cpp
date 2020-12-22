@@ -9,7 +9,7 @@
 #include <functional>
 #include <snmp_pp/integer.h>
 #include <cmath>
-
+#include "utils.h"
 
 Compi::Compi() :
     m_pAgent(nullptr),
@@ -23,6 +23,7 @@ Compi::Compi() :
     m_dSilenceThreshold(-70),
     m_nSilenceHoldoff(30),
     m_nSilent{-1,-1},
+    m_tpStart(std::chrono::system_clock::now()),
     m_nMask(FOLLOW_ACTIVE),
     m_bActive(false),
     m_bLocked(false)
@@ -37,7 +38,7 @@ void Compi::SetupLogging()
         size_t nIndex = pml::Log::Get(pml::Log::LOG_INFO).AddOutput(std::unique_ptr<pml::LogOutput>(new LogToFile(m_iniConfig.GetIniString("paths", "logs", "~/compilogs"))));
         pml::Log::Get().SetOutputLevel(nIndex, static_cast<pml::Log::enumLevel>(m_iniConfig.GetIniInt("loglevel", "file", 2)));
     }
-    else if(m_iniConfig.GetIniInt("log","console",1) == 1)
+    if(m_iniConfig.GetIniInt("log","console",1) == 1)
     {
         size_t nIndex = pml::Log::Get().AddOutput(std::unique_ptr<pml::LogOutput>(new pml::LogOutput()));
         pml::Log::Get().SetOutputLevel(nIndex, static_cast<pml::Log::enumLevel>(m_iniConfig.GetIniInt("loglevel", "console", 2)));
@@ -113,8 +114,16 @@ void Compi::HandleNoLock()
 
     if(m_nFailureCount >= m_nFailures)
     {
-        size_t nDelay = m_pRecorder->Locked(false, 0);
-        pml::Log::Get() << "Compi\tExceeded max lock failures. Set lock to false and increase window to " << nDelay << "ms" << std::endl;
+
+        if(m_pRecorder->GetCurrentSamplesForDelay() != m_pRecorder->GetMaxSamplesForDelay())
+        {
+            size_t nDelay = m_pRecorder->Locked(false, 0);
+            pml::Log::Get() << "Compi\tExceeded max lock failures. Set lock to false and increase window to " << nDelay << "ms" << std::endl;
+        }
+        else
+        {
+            m_pRecorder->Locked(false, 0);
+        }
         m_bLocked = false;
 
     }
@@ -122,11 +131,16 @@ void Compi::HandleNoLock()
 
 bool Compi::HandleLock(const hashresult& result)
 {
+    if(m_nFailureCount != 0)
+    {
+        pml::Log::Get(pml::Log::LOG_INFO) << "Compi\tRelocked." << std::endl;
+    }
     m_nFailureCount = 0;
 
     if(!m_bLocked)
     {
         size_t nDelay = m_pRecorder->Locked(true, result.first);
+
         pml::Log::Get(pml::Log::LOG_INFO) << "Compi\tLocked. Window: " << nDelay << "ms" << std::endl;
         m_bLocked = true;
 
@@ -148,6 +162,9 @@ void Compi::Loop()
         hashresult result{0,0.0};
         if(bDone)
         {
+
+            LogHeartbeat();
+
             bool bJustLocked(false);
 
             bool bSilentA = CheckSilence(m_pRecorder->GetPeak().first, A_LEG);
@@ -157,7 +174,7 @@ void Compi::Loop()
                 deinterlacedBuffer buffer(m_pRecorder->CreateBuffer());
                 result = CalculateHash(buffer.first,buffer.second, m_pRecorder->GetNumberOfSamplesToHash(), m_bLocked);
 
-                pml::Log::Get() << "Compi\tCalculation\tDelay=" <<  (result.first*1000/m_nSampleRate) << "ms\tConfidence=" << result.second << std::endl;
+                pml::Log::Get(pml::Log::LOG_DEBUG) << "Compi\tCalculation\tDelay=" <<  (result.first*1000/m_nSampleRate) << "ms\tConfidence=" << result.second << std::endl;
                 if(result.second < 0.5) //could not get lock
                 {
                     HandleNoLock();
@@ -171,7 +188,7 @@ void Compi::Loop()
             {
                 m_nFailureCount = 0;
                 result = {0,1.0};
-                pml::Log::Get() << "Compi\tBoth channels silent" << std::endl;
+                pml::Log::Get(pml::Log::LOG_DEBUG) << "Compi\tBoth channels silent" << std::endl;
             }
             UpdateSNMP(result, bJustLocked);
         }
@@ -228,6 +245,7 @@ int Compi::Run(const std::string& sPath)
         SetupLogging();
 
         pml::Log::Get(pml::Log::LOG_INFO) << "Compi\tcompi started" << std::endl;
+        m_tpLogBeat = std::chrono::system_clock::now();
 
         SetupAgent();
         SetupRecorder();
@@ -280,7 +298,7 @@ bool Compi::ActivateCallback(Snmp_pp::SnmpSyntax* pValue, int nSyntax)
     Snmp_pp::SnmpInt32* pInt = dynamic_cast<Snmp_pp::SnmpInt32*>(pValue);
     if(!pInt)
     {
-        pml::Log::Get() << "Could not dynamic cast!" << std::endl;
+        pml::Log::Get(pml::Log::LOG_ERROR) << "Could not dynamic cast!" << std::endl;
     }
 
     if(pInt && *pInt < 2)
@@ -320,6 +338,7 @@ bool Compi::CheckSilence(float dPeak, enumLeg eLeg)
             {
                 m_pAgent->SilenceChanged(true, eLeg);
             }
+
         }
     }
     else if(m_nSilent[eLeg] != 0)
@@ -328,4 +347,15 @@ bool Compi::CheckSilence(float dPeak, enumLeg eLeg)
         m_pAgent->SilenceChanged(false, eLeg);
     }
     return (m_nSilent[eLeg] == 1);
+}
+
+
+void Compi::LogHeartbeat()
+{
+    auto minutesLog = std::chrono::duration_cast<std::chrono::minutes>(std::chrono::system_clock::now()-m_tpLogBeat);
+    if(minutesLog.count() > 59)
+    {
+        pml::Log::Get(pml::Log::LOG_CRITICAL) << "[LogBeat]" << ConvertTimeToIsoString(m_tpStart) << std::endl;
+        m_tpLogBeat = std::chrono::system_clock::now();
+    }
 }

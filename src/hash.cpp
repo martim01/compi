@@ -12,13 +12,21 @@ const unsigned long SAMPLE_RATE = 48000;
 
 hashresult CalculateHash(const std::deque<float>& bufferA, const std::deque<float>& bufferB, size_t nSampleSize, bool bLocked)
 {
-    pml::Log::Get(pml::Log::LOG_DEBUG) << "CalculateHash\tGet Offset: Window size=" << nSampleSize << std::endl;
-
-    hashresult result = std::make_pair(0,-1.0);
-
 
     std::vector<float> vBufferA(std::begin(bufferA), std::end(bufferA));
     std::vector<float> vBufferB(std::begin(bufferB), std::end(bufferB));
+
+
+    pml::Log::Get(pml::Log::LOG_DEBUG) << "CalculateHash\tCheck if tone" << std::endl;
+    if(CheckForTone(vBufferA, vBufferB))
+    {
+        pml::Log::Get(pml::Log::LOG_DEBUG) << "CalculateHash\tTONE" << std::endl;
+        return std::make_pair(0, 1.0);
+    }
+
+    hashresult result = std::make_pair(0,-1.0);
+
+    pml::Log::Get(pml::Log::LOG_DEBUG) << "CalculateHash\tGet Offset: Window size=" << nSampleSize << std::endl;
 
 
     size_t nOffsetA(0);
@@ -78,7 +86,7 @@ hashresult CalculateHash(const std::deque<float>& bufferA, const std::deque<floa
             {
                 int nConfidenceLength;
                 int nFrames = std::min(nHashA, nHashB);
-                pml::Log::Get(pml::Log::LOG_TRACE) << "CalculateHash\tHash size: A=" << nHashA << "\tB=" << nHashB << std::endl;
+                pml::Log::Get(pml::Log::LOG_DEBUG) << "CalculateHash\tHash size: A=" << nHashA << "\tB=" << nHashB << std::endl;
                 double* pResult =ph_audio_distance_ber(pHashB, nHashB, pHashA, nHashA, 0.30, nFrames, nConfidenceLength);
 
                 for (int i=0;i<nConfidenceLength;i++)
@@ -171,4 +179,128 @@ int CalculateOffset(std::vector<float> vBufferA, std::vector<float> vBufferB)
 
     return offset;
 }
+
+
+
+std::map<int, double> GetPeaks(const std::vector<kiss_fft_cpx>& vfft_out)
+{
+
+    std::map<int, double> mPeaks;
+
+    double dLastBin(-800);
+    int nPeaks(0);
+    bool bDown(false);
+
+    for(size_t i = 0; i < vfft_out.size(); i++)
+    {
+        float dAmplitude(sqrt( (vfft_out[i].r*vfft_out[i].r) + (vfft_out[i].i*vfft_out[i].i)));
+        if(dAmplitude<0)
+        {
+            dAmplitude=-dAmplitude;
+        }
+        dAmplitude /= static_cast<float>(vfft_out.size());
+        double dLog = 20*log10(dAmplitude);
+
+
+        if(dLog < dLastBin)
+        {
+            if(bDown == false)  //we were going up, now we are going down so the last bin must be a peak
+            {
+                if(dLog > -80)
+                {
+                    mPeaks.insert(make_pair(i-1, dLastBin));
+                }
+            }
+            bDown = true;
+        }
+        else
+        {
+            bDown = false;
+        }
+
+        dLastBin = dLog;
+    }
+
+    return mPeaks;
+
+}
+
+
+float HannWindow(float dIn, size_t nSample, size_t nSize)
+{
+    return 0.5*(1-cos((2*M_PI*static_cast<float>(nSample))/static_cast<float>(nSize-1)))*dIn;
+}
+
+bool CheckForTone(std::vector<float> vBufferA, std::vector<float> vBufferB)
+{
+    if(vBufferA.size() < 2046 || vBufferB.size() < 2046)
+    {
+        pml::Log::Get(pml::Log::LOG_WARN) << "CalculateHash\tNo enough samples to check tone" << std::endl;
+        return false;
+    }
+
+    size_t nBins = 1024;
+    std::vector<kiss_fft_scalar> vfftL((nBins-1*2));
+    std::vector<kiss_fft_scalar> vfftR((nBins-1*2));
+
+    std::vector<kiss_fft_cpx> vfft_outL(nBins);
+    std::vector<kiss_fft_cpx> vfft_outR(nBins);
+
+
+    for(size_t i = 0; i < vfftL.size(); i++)
+    {
+        vfftL[i] = HannWindow(vBufferA[i], i, vfftL.size());
+        vfftR[i] = HannWindow(vBufferB[i], i, vfftL.size());
+    }
+
+    //Now do the check
+    kiss_fftr_cfg cfgL;
+    kiss_fftr_cfg cfgR;
+
+
+    if ((cfgL = kiss_fftr_alloc(vfftL.size(), 0, NULL, NULL)) != NULL)
+    {
+        kiss_fftr(cfgL, vfftL.data(), vfft_outL.data());
+    }
+    free(cfgL);
+
+    if ((cfgR = kiss_fftr_alloc(vfftR.size(), 0, NULL, NULL)) != NULL)
+    {
+        kiss_fftr(cfgR, vfftR.data(), vfft_outR.data());
+    }
+    free(cfgR);
+
+
+    std::map<int, double> mPeaksL(GetPeaks(vfft_outL));
+    std::map<int, double> mPeaksR(GetPeaks(vfft_outR));
+
+    if(mPeaksL.size() != 1 || mPeaksR.size() != 1)
+    {
+        pml::Log::Get(pml::Log::LOG_DEBUG) << "CalculateHash\tCheckForTone - " << mPeaksL.size() << ", " << mPeaksR.size() << std::endl;
+        return false;
+    }
+
+    float dMaxL(-120.0);
+    float dMaxR(-120.0);
+    int nMaxL, nMaxR;
+
+    for(auto pairPeak : mPeaksL)
+    {
+        if(pairPeak.second > dMaxL)
+        {
+            nMaxL = pairPeak.first;
+        }
+    }
+
+    for(auto pairPeak : mPeaksR)
+    {
+        if(pairPeak.second > dMaxR)
+        {
+            nMaxR = pairPeak.first;
+        }
+    }
+
+    return (nMaxL == nMaxR);
+}
+
 

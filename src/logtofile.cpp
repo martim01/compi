@@ -33,6 +33,7 @@ void LogToFile::OpenFile(const std::string& sFilePath, const std::string& sFileN
 
 void LogToFile::Flush(pml::Log::enumLevel nLogLevel, const std::stringstream&  logStream)
 {
+    std::lock_guard<std::mutex> lg(m_mutex);
     if(nLogLevel >= m_eLevel)
     {
         auto now = std::chrono::system_clock::now();

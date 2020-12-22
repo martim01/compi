@@ -44,6 +44,9 @@ class Recorder
         std::chrono::milliseconds GetMaxDelay();
         std::chrono::milliseconds GetExpectedTimeToFillBuffer();
 
+        unsigned int GetMaxSamplesForDelay() const { return m_nMaxSamplesForDelay; }
+        unsigned int GetCurrentSamplesForDelay() const { return m_nSamplesForDelay; }
+
         ~Recorder();
     private:
 

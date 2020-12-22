@@ -272,11 +272,13 @@ size_t Recorder::Locked(bool bLocked, long nOffset)
 {
     pml::Log::Get(pml::Log::LOG_DEBUG) << "Recorder\tLocked: " << bLocked<<"\tOffset=" << nOffset << std::endl;
 
+    std::lock_guard<std::mutex> lg(m_mutexInternal);
+
     if(bLocked && m_bLocked == false)
     {
         m_nSamplesForDelay = m_nStartSamplesForDelay;
         m_nOffset = nOffset;
-  }
+    }
     else if(!bLocked)
     {
         m_nSamplesForDelay = std::min(std::max(m_nSamplesForDelay, (size_t)m_nOffset)*2, m_nMaxSamplesForDelay);

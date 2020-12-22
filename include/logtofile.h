@@ -2,6 +2,8 @@
 #include "log.h"
 #include <string>
 #include <fstream>
+#include <chrono>
+#include <mutex>
 
 class LogToFile : public pml::LogOutput
 {
@@ -18,7 +20,8 @@ class LogToFile : public pml::LogOutput
         std::string m_sFileName;
 
         std::ofstream m_ofLog;
-	bool m_bLogToConsole;
+        bool m_bLogToConsole;
+        std::mutex m_mutex;
 };
 
 
