@@ -5,8 +5,8 @@
 #include <iomanip>
 
 
-LogToFile::LogToFile(const std::string& sRootPath, int nTimestamp, enumTS eResolution) : LogOutput(nTimestamp, eResolution),
- m_sRootPath(CreatePath(sRootPath))
+LogToFile::LogToFile(const std::string& sRootPath,int nTimestamp, pml::LogOutput::enumTS eResolution) : LogOutput(nTimestamp, eResolution),
+m_sRootPath(CreatePath(sRootPath))
 {
 }
 
@@ -31,31 +31,30 @@ void LogToFile::OpenFile(const std::string& sFilePath, const std::string& sFileN
     chmod(sFile.c_str(), 0664);
 }
 
-void LogToFile::Flush(pml::Log::enumLevel nLogLevel, const std::stringstream&  logStream)
+void LogToFile::Flush(pml::enumLevel eLogLevel, const std::stringstream&  logStream)
 {
-    std::lock_guard<std::mutex> lg(m_mutex);
-    if(nLogLevel >= m_eLevel)
+    if(eLogLevel >= m_eLevel)
     {
         auto now = std::chrono::system_clock::now();
         auto in_time_t = std::chrono::system_clock::to_time_t(now);
 
         std::stringstream ssFilePath;
         std::stringstream ssFileName;
-        ssFilePath << m_sRootPath << std::put_time(localtime(&in_time_t), "%Y/%m/%d");
-        ssFileName << std::put_time(localtime(&in_time_t), "/%H") << ".log";
+        ssFileName << std::put_time(localtime(&in_time_t), "/%Y-%m-%dT%H") << ".log";
 
-        if(m_ofLog.is_open() == false || ssFilePath.str() != m_sFilePath || ssFileName.str() != m_sFileName)
+        if(m_ofLog.is_open() == false || m_sRootPath != m_sFilePath || ssFileName.str() != m_sFileName)
         {
-            OpenFile(ssFilePath.str(), ssFileName.str());
+            OpenFile(m_sRootPath, ssFileName.str());
         }
 
         if(m_ofLog.is_open())
         {
             m_ofLog << Timestamp().str();
-            m_ofLog << pml::Log::STR_LEVEL[nLogLevel] << "\t" << logStream.str();
+            m_ofLog << pml::LogStream::STR_LEVEL[eLogLevel] << "\t" << logStream.str();
             m_ofLog.flush();
         }
     }
 }
+
 
 

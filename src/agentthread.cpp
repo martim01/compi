@@ -50,11 +50,11 @@ AgentThread::AgentThread(int nPort, int nPortTrap, const std::string& sBaseOid, 
 
     if (nStatus == SNMP_CLASS_SUCCESS)
     {
-        pml::Log::Get() << "SNMP Started" << std::endl;
+        pmlLog() << "SNMP Started";
     }
     else
     {
-        pml::Log::Get(pml::Log::LOG_CRITICAL) << "SNMP Failed To Start!" << std::endl;
+        pmlLog(pml::LOG_CRITICAL) << "SNMP Failed To Start!";
         exit(1);
     }
 
@@ -154,7 +154,7 @@ void AgentThread::ThreadLoop()
             m_pMib->cleanup();
         }
     }
-    pml::Log::Get(pml::Log::LOG_INFO) << "AgentThread\tExiting" << std::endl;
+    pmlLog(pml::LOG_INFO) << "AgentThread\tExiting";
 
 }
 
@@ -169,14 +169,14 @@ void AgentThread::AudioChanged(int nState)
         pEntry->get_value(nCurrent);
         if(nCurrent != nState)
         {
-  	        pml::Log::Get(pml::Log::LOG_DEBUG) << "AgentThread\tAudioChanged: " << nState << std::endl;
+  	        pmlLog(pml::LOG_DEBUG) << "AgentThread\tAudioChanged: " << nState;
             pEntry->set_value(SnmpInt32(nState));
             SendTrap(nState, OID_AUDIO);
         }
     }
     else
     {
-        pml::Log::Get(pml::Log::LOG_WARN)  << "AgentThread\tAudioChanged:  OID Not Found!" << std::endl;
+        pmlLog(pml::LOG_WARN)  << "AgentThread\tAudioChanged:  OID Not Found!";
     }
 }
 
@@ -192,14 +192,14 @@ void AgentThread::OverallChanged(bool bActive)
         pEntry->get_value(nCurrent);
         if(nCurrent != static_cast<int>(bActive))
         {
-  	        pml::Log::Get(pml::Log::LOG_DEBUG) << "AgentThread\tOverallChanged: " << bActive << std::endl;
+  	        pmlLog(pml::LOG_DEBUG) << "AgentThread\tOverallChanged: " << bActive;
             pEntry->set_value(SnmpInt32(bActive));
             SendTrap(static_cast<int>(bActive), OID_OVERALL);
         }
     }
     else
     {
-        pml::Log::Get(pml::Log::LOG_WARN)  << "AgentThread\tOverallChanged:  OID Not Found!" << std::endl;
+        pmlLog(pml::LOG_WARN)  << "AgentThread\tOverallChanged:  OID Not Found!";
     }
 }
 
@@ -215,14 +215,14 @@ void AgentThread::ComparisonChanged(bool bSame)
         pEntry->get_value(nCurrent);
         if(nCurrent != static_cast<int>(bSame))
         {
-  	        pml::Log::Get(pml::Log::LOG_DEBUG) << "AgentThread\tComparisonChanged: " << bSame << std::endl;
+  	        pmlLog(pml::LOG_DEBUG) << "AgentThread\tComparisonChanged: " << bSame;
             pEntry->set_value(SnmpInt32(bSame));
             SendTrap(static_cast<int>(bSame), OID_COMPARISON);
         }
     }
     else
     {
-        pml::Log::Get(pml::Log::LOG_WARN)  << "AgentThread\tComparisonChanged:  OID Not Found!" << std::endl;
+        pmlLog(pml::LOG_WARN)  << "AgentThread\tComparisonChanged:  OID Not Found!";
     }
 }
 
@@ -239,14 +239,14 @@ void AgentThread::SilenceChanged(bool bSilent, int nLeg)
         pEntry->get_value(nCurrent);
         if(nCurrent != static_cast<int>(bSilent))
         {
-  	        pml::Log::Get(pml::Log::LOG_DEBUG) << "AgentThread\tSilenceChanged: " << nLeg << "=" << bSilent << std::endl;
+  	        pmlLog(pml::LOG_DEBUG) << "AgentThread\tSilenceChanged: " << nLeg << "=" << bSilent;
             pEntry->set_value(SnmpInt32(bSilent));
             SendTrap(static_cast<int>(bSilent), sOid);
         }
     }
     else
     {
-        pml::Log::Get(pml::Log::LOG_WARN)  << "AgentThread\tSilenceChanged:  OID Not Found!" << std::endl;
+        pmlLog(pml::LOG_WARN)  << "AgentThread\tSilenceChanged:  OID Not Found!";
     }
 }
 
@@ -261,14 +261,14 @@ void AgentThread::DelayChanged(std::chrono::milliseconds delay)
         pEntry->get_value(nCurrent);
         if(nCurrent != delay.count())
         {
-  	        pml::Log::Get(pml::Log::LOG_DEBUG) << "AgentThread\tDelayChanged: " << delay.count() << std::endl;
+  	        pmlLog(pml::LOG_DEBUG) << "AgentThread\tDelayChanged: " << delay.count();
             pEntry->set_value(SnmpInt32(delay.count()));
             SendTrap(delay.count(), OID_DELAY);
         }
     }
     else
     {
-        pml::Log::Get(pml::Log::LOG_WARN)  << "AgentThread\tDelayChanged:  OID Not Found!" << std::endl;
+        pmlLog(pml::LOG_WARN)  << "AgentThread\tDelayChanged:  OID Not Found!";
     }
 
 }
@@ -277,14 +277,14 @@ void AgentThread::AddTrapDestination(const std::string& sIpAddress)
 {
     std::lock_guard<std::mutex> lg(m_mutex);
     m_setTrapDestination.insert(sIpAddress);
-    pml::Log::Get(pml::Log::LOG_INFO)  << "AgentThread\tTrap destination " << sIpAddress << " added" << std::endl;
+    pmlLog(pml::LOG_INFO)  << "AgentThread\tTrap destination " << sIpAddress << " added";
 }
 
 void AgentThread::RemoveTrapDestination(const std::string& sIpAddress)
 {
     std::lock_guard<std::mutex> lg(m_mutex);
     m_setTrapDestination.erase(sIpAddress);
-    pml::Log::Get(pml::Log::LOG_INFO)  << "AgentThread\tTrap destination " << sIpAddress << " removed" << std::endl;
+    pmlLog(pml::LOG_INFO)  << "AgentThread\tTrap destination " << sIpAddress << " removed";
 }
 
 
@@ -307,7 +307,7 @@ void AgentThread::SendTrap(int nValue, const std::string& sOid)
         UdpAddress dest(ssDest.str().c_str());
         no.add_v2_trap_destination(dest, "start", "start", m_sCommunity.c_str());
 
-        pml::Log::Get(pml::Log::LOG_DEBUG)  << "AgentThread\tTrap " << sOid << " sent to " << ssDest.str() << std::endl;
+        pmlLog(pml::LOG_DEBUG)  << "AgentThread\tTrap " << sOid << " sent to " << ssDest.str();
     }
     no.generate(pVbs, 1, rdsOid, "", "");
 

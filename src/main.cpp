@@ -15,10 +15,10 @@ static void sig(int signo)
                 void* arr[10];
                 size_t nSize = backtrace(arr, 10);
 
-                pml::Log::Get(pml::Log::LOG_CRITICAL)  << "Segmentation fault, aborting. " << nSize << std::endl;
+                pmlLog(pml::LOG_CRITICAL)  << "Segmentation fault, aborting. " << nSize;
                 for(size_t i = 0; i < nSize; i++)
                 {
-                    pml::Log::Get(pml::Log::LOG_CRITICAL)  << std::hex << "0x" << reinterpret_cast<int>(arr[i]) <<std::endl;
+                    pmlLog(pml::LOG_CRITICAL)  << std::hex << "0x" << reinterpret_cast<int>(arr[i]);
                 }
 
                 _exit(1);
@@ -29,7 +29,7 @@ static void sig(int signo)
             {
                 if (g_bRun)
                 {
-                    pml::Log::Get(pml::Log::LOG_WARN)  << "User abort" << std::endl;
+                    pmlLog(pml::LOG_WARN)  << "User abort";
                 }
                 g_bRun = false;
             }
@@ -51,7 +51,7 @@ int main(int argc, char* argv[])
 {
     if(argc < 2)
     {
-        std::cout << "Not enought arguments. Usage: compi [config file path]" << std::endl;
+        std::cout << "Not enought arguments. Usage: compi [config file path]";
         return -1;
     }
 
@@ -60,6 +60,7 @@ int main(int argc, char* argv[])
 
 
     Compi app;
-    return app.Run(argv[1]);
+    int nExit = app.Run(argv[1]);
 
+      return nExit;
 }

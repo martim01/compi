@@ -2,6 +2,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <iostream>
+#include <fstream>
 #include <iomanip>
 #include <string.h>
 #include <syslog.h>
@@ -12,6 +13,7 @@
 #include <netinet/ip.h>
 #include <arpa/inet.h>
 #include <algorithm>
+#include <sstream>
 
 
 using namespace std;
@@ -218,4 +220,26 @@ std::string& rtrim(std::string& s)
 std::string& trim(std::string& s)
 {
     return ltrim(rtrim(s));
+}
+
+
+std::string GetMemoryUsage()
+{
+    int nSize=0, nResident = 0, nShare = 0;
+    std::ifstream buffer("/proc/self/statm");
+
+    buffer >> nSize >> nResident >> nShare;
+    buffer.close();
+
+    long page_size = sysconf(_SC_PAGE_SIZE)/1024;
+
+    double rss = nResident*page_size;
+    double shared = nShare*page_size;
+    double priv = rss-shared;
+
+    std::stringstream ss;
+    ss << "RSS " << rss << "kB\tShared " << shared << "kB\tPrivate " << priv;
+    return ss.str();
+
+
 }

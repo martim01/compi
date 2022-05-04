@@ -61,7 +61,7 @@ bool Recorder::Init()
 
     if(!InitPortAudio())
     {
-        pml::Log::Get(pml::Log::LOG_CRITICAL) << "Recorder\tCould not init port audio for some reason" << std::endl;
+        pmlLog(pml::LOG_CRITICAL) << "Recorder\tCould not init port audio for some reason";
         return false;
     }
     return StartRecording();
@@ -75,7 +75,7 @@ bool Recorder::InitPortAudio()
     PaError err = Pa_Initialize();
     if( err != paNoError )
     {
-        pml::Log::Get(pml::Log::LOG_CRITICAL) << "Recorder\tUnable to init port audio:" <<  Pa_GetErrorText(err) << std::endl;
+        pmlLog(pml::LOG_CRITICAL) << "Recorder\tUnable to init port audio:" <<  Pa_GetErrorText(err);
         Pa_Terminate();
         return false;
     }
@@ -86,7 +86,7 @@ bool Recorder::InitPortAudio()
         m_nDeviceId = GetDeviceId(m_sDeviceName);
         if(m_nDeviceId == -1)
         {
-            pml::Log::Get(pml::Log::LOG_CRITICAL)  << "Recorder\tDevice " << m_sDeviceName << " does not exist" << std::endl;
+            pmlLog(pml::LOG_CRITICAL)  << "Recorder\tDevice " << m_sDeviceName << " does not exist";
             return false;
         }
     }
@@ -95,7 +95,7 @@ bool Recorder::InitPortAudio()
         m_sDeviceName = GetDeviceName(m_nDeviceId);
         if(m_sDeviceName.empty())
         {
-            pml::Log::Get(pml::Log::LOG_CRITICAL)  << "Recorder\tDevice " << m_nDeviceId << " does not exist" << std::endl;
+            pmlLog(pml::LOG_CRITICAL)  << "Recorder\tDevice " << m_nDeviceId << " does not exist";
             return false;
         }
     }
@@ -116,26 +116,26 @@ bool Recorder::InitPortAudio()
     err = Pa_IsFormatSupported(&inputParameters, 0, m_nSampleRate);
     if(err != paNoError)
     {
-        pml::Log::Get(pml::Log::LOG_CRITICAL)  << "Recorder\tInput paramaters are not supported: " <<  Pa_GetErrorText(err) << std::endl;
+        pmlLog(pml::LOG_CRITICAL)  << "Recorder\tInput paramaters are not supported: " <<  Pa_GetErrorText(err);
         return false;
     }
 
     err = Pa_OpenStream(&m_pStream, &inputParameters, 0, m_nSampleRate, 4096, paNoFlag, paCallback, reinterpret_cast<void*>(this) );
     if(err != paNoError)
     {
-        pml::Log::Get(pml::Log::LOG_CRITICAL)  << "Recorder\tUnable to open stream: " << Pa_GetErrorText(err) << std::endl;
+        pmlLog(pml::LOG_CRITICAL)  << "Recorder\tUnable to open stream: " << Pa_GetErrorText(err);
         return false;
     }
 
     const PaStreamInfo* pInfo = Pa_GetStreamInfo(m_pStream);
     if(pInfo)
     {
-        pml::Log::Get(pml::Log::LOG_INFO)  << "Recorder\tStream opened: Latency " << pInfo->inputLatency << " SampleRate " << pInfo->sampleRate << std::endl;
+        pmlLog(pml::LOG_INFO)  << "Recorder\tStream opened: Latency " << pInfo->inputLatency << " SampleRate " << pInfo->sampleRate;
 
         m_nSampleRate = pInfo->sampleRate;
     }
 
-    pml::Log::Get(pml::Log::LOG_INFO)  << "Recorder\tSamplesToHash=" << m_nSamplesToHash << std::endl;
+    pmlLog(pml::LOG_INFO)  << "Recorder\tSamplesToHash=" << m_nSamplesToHash;
     return true;
 }
 
@@ -146,7 +146,7 @@ short Recorder::GetDeviceId(const std::string& sDeviceName)
     nDevices = Pa_GetDeviceCount();
     if( nDevices < 0 )
     {
-        pml::Log::Get(pml::Log::LOG_CRITICAL)  << "Recorder\tUnable to get devices: " <<  Pa_GetErrorText(nDevices);
+        pmlLog(pml::LOG_CRITICAL)  << "Recorder\tUnable to get devices: " <<  Pa_GetErrorText(nDevices);
         return -1;
     }
 
@@ -155,12 +155,12 @@ short Recorder::GetDeviceId(const std::string& sDeviceName)
         const PaDeviceInfo* pDevInfo = Pa_GetDeviceInfo(i);
         if(pDevInfo->name == sDeviceName)
         {
-            pml::Log::Get(pml::Log::LOG_INFO) << "Recorder\tDevice " << sDeviceName << " found. Id is " <<  i << std::endl;
+            pmlLog(pml::LOG_INFO) << "Recorder\tDevice " << sDeviceName << " found. Id is " <<  i;
             return i;
         }
         else
         {
-            pml::Log::Get(pml::Log::LOG_INFO) << "Recorder\tInput " << i << " is called " <<  std::string(pDevInfo->name) << std::endl;
+            pmlLog(pml::LOG_INFO) << "Recorder\tInput " << i << " is called " <<  std::string(pDevInfo->name);
         }
     }
     return -1;
@@ -171,12 +171,12 @@ std::string Recorder::GetDeviceName(short nDeviceId)
     const PaDeviceInfo* pDevInfo = Pa_GetDeviceInfo(nDeviceId);
     if(pDevInfo)
     {
-        pml::Log::Get(pml::Log::LOG_INFO) << "Recorder\tDevice " << nDeviceId << " found. Name is " <<  pDevInfo->name << std::endl;
+        pmlLog(pml::LOG_INFO) << "Recorder\tDevice " << nDeviceId << " found. Name is " <<  pDevInfo->name;
         return pDevInfo->name;
     }
     else
     {
-        pml::Log::Get(pml::Log::LOG_ERROR) << "Recorder\tCould not find device " << nDeviceId << std::endl;
+        pmlLog(pml::LOG_ERROR) << "Recorder\tCould not find device " << nDeviceId;
         return "";
     }
 }
@@ -188,10 +188,10 @@ bool Recorder::StartRecording()
     PaError err = Pa_StartStream(m_pStream);
     if(err != paNoError)
     {
-        pml::Log::Get(pml::Log::LOG_CRITICAL)  << "Recorder\tUnable to start stream: " << Pa_GetErrorText(err) << std::endl;;
+        pmlLog(pml::LOG_CRITICAL)  << "Recorder\tUnable to start stream: " << Pa_GetErrorText(err);;
         return false;
     }
-    pml::Log::Get(pml::Log::LOG_INFO) << "Recorder\tRecording started" << std::endl;
+    pmlLog(pml::LOG_INFO) << "Recorder\tRecording started";
     return true;
 
 }
@@ -205,12 +205,12 @@ void Recorder::Callback(const float* pBuffer, size_t nFrameCount)
     if(m_bInputOk == false)
     {
         m_bInputOk = true;
-        pml::Log::Get(pml::Log::LOG_INFO) << "Recorder\tInput Okay: " << std::this_thread::get_id() << std::endl;
+        pmlLog(pml::LOG_INFO) << "Recorder\tInput Okay: " << std::this_thread::get_id();
     }
 
     if(nFrameCount != 4096)
     {
-        pml::Log::Get(pml::Log::LOG_ERROR) << "Recorder\tMissing frames" << std::endl;
+        pmlLog(pml::LOG_ERROR) << "Recorder\tMissing frames";
     }
 
     std::lock_guard<std::mutex> lg(m_mutexInternal);
@@ -235,7 +235,7 @@ void Recorder::Callback(const float* pBuffer, size_t nFrameCount)
            (m_nOffset >= 0 && m_Buffer.second.size() > m_nSamplesForDelay+m_nSamplesToHash+abs(m_nOffset)))
         {
             m_bReady = false;
-            pml::Log::Get(pml::Log::LOG_TRACE) << "Recorder\tBufferA=" << m_Buffer.first.size() << "\tBufferB=" << m_Buffer.second.size() << std::endl;
+            pmlLog(pml::LOG_TRACE) << "Recorder\tBufferA=" << m_Buffer.first.size() << "\tBufferB=" << m_Buffer.second.size();
             m_cv.notify_one();
         }
     }
@@ -253,7 +253,7 @@ void Recorder::CompiReady()
     std::lock_guard<std::mutex> lg(m_mutexInternal);
     m_peak.first = m_peak.second = 0.0;
     m_bReady = true;
-    pml::Log::Get(pml::Log::LOG_DEBUG) << "Recorder\tCompi Ready" << std::endl;
+    pmlLog(pml::LOG_DEBUG) << "Recorder\tCompi Ready";
 }
 
 
@@ -270,9 +270,10 @@ std::chrono::milliseconds Recorder::GetExpectedTimeToFillBuffer()
 
 size_t Recorder::Locked(bool bLocked, long nOffset)
 {
-    pml::Log::Get(pml::Log::LOG_DEBUG) << "Recorder\tLocked: " << bLocked<<"\tOffset=" << nOffset << std::endl;
+    pmlLog(pml::LOG_DEBUG) << "Recorder\tLocked: " << bLocked<<"\tOffset=" << nOffset;
 
     std::lock_guard<std::mutex> lg(m_mutexInternal);
+
 
     if(bLocked && m_bLocked == false)
     {
@@ -286,6 +287,7 @@ size_t Recorder::Locked(bool bLocked, long nOffset)
         m_nOffset = 0;
         m_Buffer.first.clear();
         m_Buffer.second.clear();
+
     }
 
 
@@ -320,6 +322,7 @@ deinterlacedBuffer Recorder::CreateBuffer()
     m_Buffer.first.erase(m_Buffer.first.begin(), m_Buffer.first.begin()+nA);
     m_Buffer.second.erase(m_Buffer.second.begin(), m_Buffer.second.begin()+nB);
 
+    pmlLog(pml::LOG_DEBUG) << "Recorder\tBuffer size: " << m_Buffer.first.size() << ", " << m_Buffer.second.size();
 
     return std::make_pair(std::deque<float>(m_Buffer.first.begin(), m_Buffer.first.begin()+(m_nSamplesForDelay+m_nSamplesToHash)),
                           std::deque<float>(m_Buffer.second.begin(), m_Buffer.second.begin()+(m_nSamplesForDelay+m_nSamplesToHash)));

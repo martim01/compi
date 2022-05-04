@@ -17,16 +17,16 @@ hashresult CalculateHash(const std::deque<float>& bufferA, const std::deque<floa
     std::vector<float> vBufferB(std::begin(bufferB), std::end(bufferB));
 
 
-    pml::Log::Get(pml::Log::LOG_DEBUG) << "CalculateHash\tCheck if tone" << std::endl;
+    pmlLog(pml::LOG_DEBUG) << "CalculateHash\tCheck if tone";
     if(CheckForTone(vBufferA, vBufferB))
     {
-        pml::Log::Get(pml::Log::LOG_DEBUG) << "CalculateHash\tTONE" << std::endl;
+        pmlLog(pml::LOG_DEBUG) << "CalculateHash\tTONE";
         return std::make_pair(0, 1.0);
     }
 
     hashresult result = std::make_pair(0,-1.0);
 
-    pml::Log::Get(pml::Log::LOG_DEBUG) << "CalculateHash\tGet Offset: Window size=" << nSampleSize << std::endl;
+    pmlLog(pml::LOG_DEBUG) << "CalculateHash\tGet Offset: Window size=" << nSampleSize;
 
 
     size_t nOffsetA(0);
@@ -44,11 +44,11 @@ hashresult CalculateHash(const std::deque<float>& bufferA, const std::deque<floa
             nOffsetA = static_cast<size_t>(result.first);
         }
 
-        pml::Log::Get(pml::Log::LOG_DEBUG) << "CalculateHash\tOffsetA=" << nOffsetA << "\tOffsetB=" << nOffsetB << std::endl;
+        pmlLog(pml::LOG_DEBUG) << "CalculateHash\tOffsetA=" << nOffsetA << "\tOffsetB=" << nOffsetB;
     }
 
 
-    pml::Log::Get(pml::Log::LOG_DEBUG) << "CalculateHash\tStarting Hash Check" << std::endl;
+    pmlLog(pml::LOG_DEBUG) << "CalculateHash\tStarting Hash Check";
 
     if(nOffsetA+nSampleSize <= vBufferA.size() && nOffsetB+nSampleSize <= vBufferB.size())
     {
@@ -56,7 +56,7 @@ hashresult CalculateHash(const std::deque<float>& bufferA, const std::deque<floa
         int nSamplesB(std::min(vBufferB.size()-nOffsetB, nSampleSize));
         int nSamples(std::min(nSamplesA, nSamplesB));
 
-        pml::Log::Get(pml::Log::LOG_DEBUG) << "CalculateHash\tComparing "<< nSamples << " samples [" << nSamplesA << "," << nSamplesB << "]" << std::endl;
+        pmlLog(pml::LOG_DEBUG) << "CalculateHash\tComparing "<< nSamples << " samples [" << nSamplesA << "," << nSamplesB << "]";
 
         if(nSamples > 0)
         {
@@ -86,7 +86,7 @@ hashresult CalculateHash(const std::deque<float>& bufferA, const std::deque<floa
             {
                 int nConfidenceLength;
                 int nFrames = std::min(nHashA, nHashB);
-                pml::Log::Get(pml::Log::LOG_DEBUG) << "CalculateHash\tHash size: A=" << nHashA << "\tB=" << nHashB << std::endl;
+                pmlLog(pml::LOG_DEBUG) << "CalculateHash\tHash size: A=" << nHashA << "\tB=" << nHashB;
                 double* pResult =ph_audio_distance_ber(pHashB, nHashB, pHashA, nHashA, 0.30, nFrames, nConfidenceLength);
 
                 for (int i=0;i<nConfidenceLength;i++)
@@ -104,17 +104,17 @@ hashresult CalculateHash(const std::deque<float>& bufferA, const std::deque<floa
         }
         else
         {
-            pml::Log::Get(pml::Log::LOG_WARN) << "CalculateHash\tSample size too small for offset: Sample Size: " << nSampleSize << ", OffsetA " <<  nOffsetA
-            << ", BufferA " << vBufferA.size() << ", OffsetB " << nOffsetB << ", BufferB " << vBufferB.size() << std::endl;
+            pmlLog(pml::LOG_WARN) << "CalculateHash\tSample size too small for offset: Sample Size: " << nSampleSize << ", OffsetA " <<  nOffsetA
+            << ", BufferA " << vBufferA.size() << ", OffsetB " << nOffsetB << ", BufferB " << vBufferB.size();
         }
     }
     else
     {
-        pml::Log::Get(pml::Log::LOG_WARN) << "CalculateHash\tSample size too small for offset: Sample Size: " << nSampleSize << ", OffsetA " <<  nOffsetA
-            << ", BufferA " << vBufferA.size() << ", OffsetB " << nOffsetB << ", BufferB " << vBufferB.size() << std::endl;
+        pmlLog(pml::LOG_WARN) << "CalculateHash\tSample size too small for offset: Sample Size: " << nSampleSize << ", OffsetA " <<  nOffsetA
+            << ", BufferA " << vBufferA.size() << ", OffsetB " << nOffsetB << ", BufferB " << vBufferB.size();
     }
 
-    pml::Log::Get(pml::Log::LOG_DEBUG) << "CalculateHash\tHash Check Finished: Confidence: " << result.second << std::endl;
+    pmlLog(pml::LOG_DEBUG) << "CalculateHash\tHash Check Finished: Confidence: " << result.second;
 
     return result;
 
@@ -175,7 +175,7 @@ int CalculateOffset(std::vector<float> vBufferA, std::vector<float> vBufferB)
         offset = offset - nBlockSize;
     }
 
-    pml::Log::Get(pml::Log::LOG_DEBUG) << "CalculateHash\tOffset=" << offset << " samples" << std::endl;
+    pmlLog(pml::LOG_DEBUG) << "CalculateHash\tOffset=" << offset << " samples";
 
     return offset;
 }
@@ -235,7 +235,7 @@ bool CheckForTone(std::vector<float> vBufferA, std::vector<float> vBufferB)
 {
     if(vBufferA.size() < 2046 || vBufferB.size() < 2046)
     {
-        pml::Log::Get(pml::Log::LOG_WARN) << "CalculateHash\tNo enough samples to check tone" << std::endl;
+        pmlLog(pml::LOG_WARN) << "CalculateHash\tNo enough samples to check tone";
         return false;
     }
 
@@ -276,7 +276,7 @@ bool CheckForTone(std::vector<float> vBufferA, std::vector<float> vBufferB)
 
     if(mPeaksL.size() != 1 || mPeaksR.size() != 1)
     {
-        pml::Log::Get(pml::Log::LOG_DEBUG) << "CalculateHash\tCheckForTone - " << mPeaksL.size() << ", " << mPeaksR.size() << std::endl;
+        pmlLog(pml::LOG_DEBUG) << "CalculateHash\tCheckForTone - " << mPeaksL.size() << ", " << mPeaksR.size();
         return false;
     }
 

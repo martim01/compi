@@ -2,15 +2,13 @@
 #include "log.h"
 #include <string>
 #include <fstream>
-#include <chrono>
-#include <mutex>
 
 class LogToFile : public pml::LogOutput
 {
     public:
         LogToFile(const std::string& sRootPath, int nTimestamp=TS_TIME, enumTS eResolution=TSR_MILLISECOND);
         virtual ~LogToFile(){}
-        void Flush(pml::Log::enumLevel eLogLevel, const std::stringstream&  logStream) override;
+        void Flush(pml::enumLevel eLogLevel, const std::stringstream&  logStream) override;
 
     private:
 
@@ -20,8 +18,6 @@ class LogToFile : public pml::LogOutput
         std::string m_sFileName;
 
         std::ofstream m_ofLog;
-        bool m_bLogToConsole;
-        std::mutex m_mutex;
+	bool m_bLogToConsole;
 };
-
 

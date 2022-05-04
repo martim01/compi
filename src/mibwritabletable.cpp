@@ -141,7 +141,7 @@ MibWritableEntry* MibWritableTable::GetEntry(Request* req, int ind)
 
 void MibWritableTable::get_request(Request* req, int ind)
 {
-    pml::Log::Get(pml::Log::LOG_TRACE) << "get_request" << std::endl;
+    pmlLog(pml::LOG_TRACE) << "get_request";
     MibWritableEntry* entry = GetEntry(req, ind);
     if(entry)
     {
@@ -192,7 +192,7 @@ void MibWritableTable::get_next_request(Request* req, int ind)
 
 int MibWritableTable::commit_set_request(Request* req, int ind)
 {
-    pml::Log::Get(pml::Log::LOG_TRACE) << "commit_set_request" << std::endl;
+    pmlLog(pml::LOG_TRACE) << "commit_set_request";
     MibWritableEntry* pEntry = GetEntry(req, ind);
     if(pEntry)
     {
@@ -217,19 +217,19 @@ int MibWritableTable::commit_set_request(Request* req, int ind)
 
 int	MibWritableTable::prepare_set_request(Request* req, int& ind)
 {
-    pml::Log::Get(pml::Log::LOG_TRACE) << "prepare_set_request" << std::endl;
+    pmlLog(pml::LOG_TRACE) << "prepare_set_request";
     MibWritableEntry* pEntry = GetEntry(req, ind);
     if(pEntry)
     {
-        pml::Log::Get(pml::Log::LOG_TRACE) << " entry found: " << pEntry->get_oid().get_printable() << std::endl;
+        pmlLog(pml::LOG_TRACE) << " entry found: " << pEntry->get_oid().get_printable();
 
         if(pEntry->GetCallback() == nullptr)
         {
-            pml::Log::Get(pml::Log::LOG_TRACE) << " entry not writeable " << std::endl;
+            pmlLog(pml::LOG_TRACE) << " entry not writeable ";
             return SNMP_ERROR_NOT_WRITEABLE;
         }
 
-        pml::Log::Get(pml::Log::LOG_TRACE) << " syntax of entry: " << pEntry->get_syntax() << " of request: " << req->get_syntax(ind) << std::endl;
+        pmlLog(pml::LOG_TRACE) << " syntax of entry: " << pEntry->get_syntax() << " of request: " << req->get_syntax(ind);
 
         if(pEntry->get_syntax() != req->get_syntax(ind))
         {
@@ -248,12 +248,12 @@ int	MibWritableTable::prepare_set_request(Request* req, int& ind)
 
 int	MibWritableTable::undo_set_request(Request* req, int& ind)
 {
-    pml::Log::Get(pml::Log::LOG_TRACE) << "undo_set_request" << std::endl;
+    pmlLog(pml::LOG_TRACE) << "undo_set_request";
     return SNMP_ERROR_SUCCESS;
 }
 
 void MibWritableTable::cleanup_set_request(Request* req, int& ind)
 {
-    pml::Log::Get(pml::Log::LOG_TRACE) << "cleanup_set_request" << std::endl;
+    pmlLog(pml::LOG_TRACE) << "cleanup_set_request";
 
 }

@@ -35,13 +35,13 @@ void Compi::SetupLogging()
 {
     if(m_iniConfig.GetIniInt("log","file",0) == 1)
     {
-        size_t nIndex = pml::Log::Get(pml::Log::LOG_INFO).AddOutput(std::unique_ptr<pml::LogOutput>(new LogToFile(m_iniConfig.GetIniString("paths", "logs", "~/compilogs"))));
-        pml::Log::Get().SetOutputLevel(nIndex, static_cast<pml::Log::enumLevel>(m_iniConfig.GetIniInt("loglevel", "file", 2)));
+        size_t nIndex = pmlLog().AddOutput(std::unique_ptr<pml::LogOutput>(new LogToFile(m_iniConfig.GetIniString("paths", "logs", "."))));
+        pmlLog().SetOutputLevel(nIndex, static_cast<pml::enumLevel>(m_iniConfig.GetIniInt("loglevel", "file", 2)));
     }
     if(m_iniConfig.GetIniInt("log","console",1) == 1)
     {
-        size_t nIndex = pml::Log::Get().AddOutput(std::unique_ptr<pml::LogOutput>(new pml::LogOutput()));
-        pml::Log::Get().SetOutputLevel(nIndex, static_cast<pml::Log::enumLevel>(m_iniConfig.GetIniInt("loglevel", "console", 2)));
+        size_t nIndex = pmlLog().AddOutput(std::unique_ptr<pml::LogOutput>(new pml::LogOutput()));
+        pmlLog().SetOutputLevel(nIndex, static_cast<pml::enumLevel>(m_iniConfig.GetIniInt("loglevel", "console", 2)));
     }
 }
 
@@ -105,7 +105,7 @@ void Compi::HandleNoLock()
     {
 
         m_nFailureCount++;
-        pml::Log::Get() << "Compi\tNo match for " << m_nFailureCount  << " calculations since last increase of delay" << std::endl;
+        pmlLog() << "Compi\tNo match for " << m_nFailureCount  << " calculations since last increase of delay";
     }
     else
     {   //if we've already lost the lock then don't bother chekcing x times before moving on
@@ -118,7 +118,7 @@ void Compi::HandleNoLock()
         if(m_pRecorder->GetCurrentSamplesForDelay() != m_pRecorder->GetMaxSamplesForDelay())
         {
             size_t nDelay = m_pRecorder->Locked(false, 0);
-            pml::Log::Get() << "Compi\tExceeded max lock failures. Set lock to false and increase window to " << nDelay << "ms" << std::endl;
+            pmlLog() << "Compi\tExceeded max lock failures. Set lock to false and increase window to " << nDelay << "ms";
         }
         else
         {
@@ -133,7 +133,7 @@ bool Compi::HandleLock(const hashresult& result)
 {
     if(m_nFailureCount != 0)
     {
-        pml::Log::Get(pml::Log::LOG_INFO) << "Compi\tRelocked." << std::endl;
+        pmlLog(pml::LOG_INFO) << "Compi\tRelocked.";
     }
     m_nFailureCount = 0;
 
@@ -141,7 +141,7 @@ bool Compi::HandleLock(const hashresult& result)
     {
         size_t nDelay = m_pRecorder->Locked(true, result.first);
 
-        pml::Log::Get(pml::Log::LOG_INFO) << "Compi\tLocked. Window: " << nDelay << "ms" << std::endl;
+        pmlLog(pml::LOG_INFO) << "Compi\tLocked. Window: " << nDelay << "ms";
         m_bLocked = true;
 
         return true;
@@ -151,6 +151,7 @@ bool Compi::HandleLock(const hashresult& result)
 
 void Compi::Loop()
 {
+    bool bAES(false);
     while(g_bRun)
     {
         std::unique_lock<std::mutex> lck(m_pRecorder->GetMutex());
@@ -158,10 +159,16 @@ void Compi::Loop()
         //work out how long to wait for before the buffer should be full
         bool bDone = m_pRecorder->GetConditionVariable().wait_for(lck, m_pRecorder->GetExpectedTimeToFillBuffer(), [this]{return m_pRecorder->BufferFull(); });
 
-
+        pmlLog(pml::LOG_DEBUG) << "MEMORY\t" << GetMemoryUsage();
         hashresult result{0,0.0};
         if(bDone)
         {
+            if(bAES)
+            {
+                pmlLog() << "AES detected";
+
+                bAES = true;
+            }
 
             LogHeartbeat();
 
@@ -174,7 +181,7 @@ void Compi::Loop()
                 deinterlacedBuffer buffer(m_pRecorder->CreateBuffer());
                 result = CalculateHash(buffer.first,buffer.second, m_pRecorder->GetNumberOfSamplesToHash(), m_bLocked);
 
-                pml::Log::Get(pml::Log::LOG_DEBUG) << "Compi\tCalculation\tDelay=" <<  (result.first*1000/m_nSampleRate) << "ms\tConfidence=" << result.second << std::endl;
+                pmlLog(pml::LOG_DEBUG) << "Compi\tCalculation\tDelay=" <<  (result.first*1000/m_nSampleRate) << "ms\tConfidence=" << result.second;
                 if(result.second < 0.5) //could not get lock
                 {
                     HandleNoLock();
@@ -186,24 +193,33 @@ void Compi::Loop()
             }
             else
             {
+                m_pRecorder->CreateBuffer();    //have to create buffer so that we clear it out
                 m_nFailureCount = 0;
                 result = {0,1.0};
-                pml::Log::Get(pml::Log::LOG_DEBUG) << "Compi\tBoth channels silent" << std::endl;
+                pmlLog(pml::LOG_DEBUG) << "Compi\tBoth channels silent";
+
+
             }
             UpdateSNMP(result, bJustLocked);
         }
         else
         {
-            pml::Log::Get(pml::Log::LOG_ERROR) << "Compi\tBuffer taking longer to fill than expected!" << std::endl;
+            if(bAES)
+            {
+                bAES = false;
+                pmlLog(pml::LOG_ERROR) << "Compi\tAES Lost!";;
+            }
             m_pAgent->AudioChanged(0);
             m_pAgent->ComparisonChanged(-1);
             m_pAgent->DelayChanged(std::chrono::milliseconds(0));
+            m_pAgent->SilenceChanged(true, A_LEG);  //no AES so it is silent
+            m_pAgent->SilenceChanged(true, B_LEG); //no AES so it is silent
         }
 
 
         m_pRecorder->CompiReady();
     }
-    pml::Log::Get() << "Compi\tExiting...." << std::endl;
+    pmlLog() << "Compi\tExiting....";
 }
 
 void Compi::UpdateSNMP(const hashresult& result, bool bJustLocked)
@@ -244,7 +260,7 @@ int Compi::Run(const std::string& sPath)
     {
         SetupLogging();
 
-        pml::Log::Get(pml::Log::LOG_INFO) << "Compi\tcompi started" << std::endl;
+        pmlLog(pml::LOG_INFO) << "Compi\tcompi started";
         m_tpLogBeat = std::chrono::system_clock::now();
 
         SetupAgent();
@@ -264,7 +280,7 @@ bool Compi::MaskCallback(Snmp_pp::SnmpSyntax* pValue, int nSyntax)
     Snmp_pp::SnmpInt32* pInt = dynamic_cast<Snmp_pp::SnmpInt32*>(pValue);
     if(!pInt)
     {
-        pml::Log::Get(pml::Log::LOG_WARN) << "Compi\tCould not dynamic cast!" << std::endl;
+        pmlLog(pml::LOG_WARN) << "Compi\tCould not dynamic cast!";
     }
 
     if(pInt && *pInt < 3)
@@ -284,7 +300,7 @@ bool Compi::MaskCallback(Snmp_pp::SnmpSyntax* pValue, int nSyntax)
 
         }
 
-        pml::Log::Get() << "Compi\tSNMP mask set to " << m_nMask << std::endl;
+        pmlLog() << "Compi\tSNMP mask set to " << m_nMask;
         return true;
     }
     else
@@ -298,7 +314,7 @@ bool Compi::ActivateCallback(Snmp_pp::SnmpSyntax* pValue, int nSyntax)
     Snmp_pp::SnmpInt32* pInt = dynamic_cast<Snmp_pp::SnmpInt32*>(pValue);
     if(!pInt)
     {
-        pml::Log::Get(pml::Log::LOG_ERROR) << "Could not dynamic cast!" << std::endl;
+        pmlLog(pml::LOG_ERROR) << "Could not dynamic cast!";
     }
 
     if(pInt && *pInt < 2)
@@ -312,7 +328,7 @@ bool Compi::ActivateCallback(Snmp_pp::SnmpSyntax* pValue, int nSyntax)
             ClearSNMP();
         }
 
-        pml::Log::Get(pml::Log::LOG_INFO) << "Active set to " << m_bActive << std::endl;
+        pmlLog(pml::LOG_INFO) << "Active set to " << m_bActive;
         return true;
     }
     else
@@ -355,7 +371,7 @@ void Compi::LogHeartbeat()
     auto minutesLog = std::chrono::duration_cast<std::chrono::minutes>(std::chrono::system_clock::now()-m_tpLogBeat);
     if(minutesLog.count() > 59)
     {
-        pml::Log::Get(pml::Log::LOG_CRITICAL) << "[LogBeat]" << ConvertTimeToIsoString(m_tpStart) << std::endl;
+        pmlLog(pml::LOG_CRITICAL) << "[LogBeat]" << ConvertTimeToIsoString(m_tpStart);
         m_tpLogBeat = std::chrono::system_clock::now();
     }
 }
