@@ -78,6 +78,7 @@
 		<Unit filename="external/phash/ph_fft.h" />
 		<Unit filename="include/agentthread.h" />
 		<Unit filename="include/compi.h" />
+		<Unit filename="include/fftcompare.h" />
 		<Unit filename="include/hash.h" />
 		<Unit filename="include/inimanager.h" />
 		<Unit filename="include/inisection.h" />
@@ -88,6 +89,7 @@
 		<Unit filename="include/utils.h" />
 		<Unit filename="src/agentthread.cpp" />
 		<Unit filename="src/compi.cpp" />
+		<Unit filename="src/fftcompare.cpp" />
 		<Unit filename="src/hash.cpp" />
 		<Unit filename="src/inimanager.cpp" />
 		<Unit filename="src/inisection.cpp" />
@@ -99,10 +101,6 @@
 		<Unit filename="src/mibwritabletable.cpp" />
 		<Unit filename="src/recorder.cpp" />
 		<Unit filename="src/utils.cpp" />
-		<Extensions>
-			<code_completion />
-			<debugger />
-			<envvars />
-		</Extensions>
+		<Extensions />
 	</Project>
 </CodeBlocks_project_file>
