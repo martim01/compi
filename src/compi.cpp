@@ -10,6 +10,8 @@
 #include <snmp_pp/integer.h>
 #include <cmath>
 #include "utils.h"
+#include "fftcompare.h"
+
 
 Compi::Compi() :
     m_pAgent(nullptr),
@@ -26,6 +28,7 @@ Compi::Compi() :
     m_tpStart(std::chrono::system_clock::now()),
     m_nMask(FOLLOW_ACTIVE),
     m_bActive(false),
+    m_bMinus(false),
     m_bLocked(false)
 {
 
@@ -81,6 +84,8 @@ void Compi::SetupRecorder()
     m_nFailures = m_iniConfig.GetIniInt("delay", "failures", 3);
     m_dSilenceThreshold  = std::pow(10, (m_iniConfig.GetIniDouble("silence", "threshold", -70)/20));
     m_nSilenceHoldoff  = m_iniConfig.GetIniInt("silence", "holdoff", 30);
+    m_bMinus  = (m_iniConfig.GetIniString("method", "check", "hash") == "minus");
+
 
 
     if(nDevice != -1)
@@ -179,7 +184,15 @@ void Compi::Loop()
             if(!bSilentA || !bSilentB)
             {
                 deinterlacedBuffer buffer(m_pRecorder->CreateBuffer());
-                result = CalculateHash(buffer.first,buffer.second, m_pRecorder->GetNumberOfSamplesToHash(), m_bLocked);
+
+                if(m_bMinus)
+                {
+                    result = CalculateMinus(buffer.first,buffer.second, m_pRecorder->GetPeak(), m_pRecorder->GetNumberOfSamplesToHash(), m_bLocked, result);
+                }
+                else
+                {
+                    result = CalculateHash(buffer.first,buffer.second, m_pRecorder->GetNumberOfSamplesToHash(), m_bLocked);
+                }
 
                 pmlLog(pml::LOG_DEBUG) << "Compi\tCalculation\tDelay=" <<  (result.first*1000/m_nSampleRate) << "ms\tConfidence=" << result.second;
                 if(result.second < 0.5) //could not get lock

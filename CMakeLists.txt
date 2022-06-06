@@ -50,10 +50,11 @@ endif()
 
 
 add_executable(compi "external/kissfft/kiss_fft.c"
-                     "external/kissfft/tools/kiss_fftnd.c"
-                     "external/kissfft/tools/kiss_fftndr.c"
-                     "external/kissfft/tools/kiss_fftr.c"
+                     "external/kissfft/kiss_fftnd.c"
+                     "external/kissfft/kiss_fftndr.c"
+                     "external/kissfft/kiss_fftr.c"
                      "external/log/src/log.cpp"
+                     "external/log/src/log_version.cpp"
                      "external/phash/audiophash.cpp"
                      "external/phash/ph_fft.cpp"
                      "src/agentthread.cpp"

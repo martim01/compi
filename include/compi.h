@@ -60,6 +60,8 @@ class Compi
         std::atomic<int> m_nMask;
         std::atomic<bool> m_bActive;
 
+        bool m_bMinus;
+
         bool m_bLocked;
 
         enum { FORCE_OFF, FOLLOW_ACTIVE,FORCE_ON};
