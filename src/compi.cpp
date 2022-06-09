@@ -10,7 +10,8 @@
 #include <snmp_pp/integer.h>
 #include <cmath>
 #include "utils.h"
-#include "fftcompare.h"
+#include "minuscompare.h"
+#include "troughcompare.h"
 
 
 Compi::Compi() :
@@ -28,8 +29,11 @@ Compi::Compi() :
     m_tpStart(std::chrono::system_clock::now()),
     m_nMask(FOLLOW_ACTIVE),
     m_bActive(false),
-    m_bMinus(false),
-    m_bLocked(false)
+    m_eCheck(HASH),
+    m_bLocked(false),
+    m_dFFTChangeDown(0.05),
+    m_dFFTChangeUp(0.1),
+    m_nFFTBands(20)
 {
 
 }
@@ -84,8 +88,14 @@ void Compi::SetupRecorder()
     m_nFailures = m_iniConfig.GetIniInt("delay", "failures", 3);
     m_dSilenceThreshold  = std::pow(10, (m_iniConfig.GetIniDouble("silence", "threshold", -70)/20));
     m_nSilenceHoldoff  = m_iniConfig.GetIniInt("silence", "holdoff", 30);
-    m_bMinus  = (m_iniConfig.GetIniString("method", "check", "hash") == "minus");
-
+    if(m_iniConfig.GetIniString("method", "check", "hash") == "minus")
+    {
+        m_eCheck = MINUS;
+    }
+    else if(m_iniConfig.GetIniString("method", "check", "hash") == "fft")
+    {
+        m_eCheck = FFT_DIFF;
+    }
 
 
     if(nDevice != -1)
@@ -185,13 +195,16 @@ void Compi::Loop()
             {
                 deinterlacedBuffer buffer(m_pRecorder->CreateBuffer());
 
-                if(m_bMinus)
+                switch(m_eCheck)
                 {
-                    result = CalculateMinus(buffer.first,buffer.second, m_pRecorder->GetPeak(), m_pRecorder->GetNumberOfSamplesToHash(), m_bLocked, result);
-                }
-                else
-                {
-                    result = CalculateHash(buffer.first,buffer.second, m_pRecorder->GetNumberOfSamplesToHash(), m_bLocked);
+                    case MINUS:
+                        result = CalculateMinus(buffer.first,buffer.second, m_pRecorder->GetPeak(), m_pRecorder->GetNumberOfSamplesToHash(), m_bLocked, result);
+                        break;
+                    case FFT_DIFF:
+                        result = CalculateFFTDiff(buffer.first,buffer.second, m_pRecorder->GetNumberOfSamplesToHash(), m_nFFTBands, m_dFFTChangeDown, m_dFFTChangeUp);
+                        break;
+                    default:
+                        result = CalculateHash(buffer.first,buffer.second, m_pRecorder->GetNumberOfSamplesToHash(), m_bLocked);
                 }
 
                 pmlLog(pml::LOG_DEBUG) << "Compi\tCalculation\tDelay=" <<  (result.first*1000/m_nSampleRate) << "ms\tConfidence=" << result.second;
@@ -278,6 +291,11 @@ int Compi::Run(const std::string& sPath)
 
         SetupAgent();
         SetupRecorder();
+
+
+        m_dFFTChangeDown = m_iniConfig.GetIniDouble("FFT_Diff", "Down", 0.05);
+        m_dFFTChangeUp = m_iniConfig.GetIniDouble("FFT_Diff", "Up", 0.1);
+        m_nFFTBands = m_iniConfig.GetIniInt("FFT_Diff", "Bands", 20);
 
         Loop();
 

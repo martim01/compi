@@ -1,4 +1,4 @@
-#include "fftcompare.h"
+#include "minuscompare.h"
 #include <math.h>
 #include <iostream>
 #include "hash.h"

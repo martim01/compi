@@ -182,10 +182,11 @@ int CalculateOffset(std::vector<float> vBufferA, std::vector<float> vBufferB)
 
 
 
-std::map<int, double> GetPeaks(const std::vector<kiss_fft_cpx>& vfft_out)
+std::vector<std::pair<int, double>> GetPeaks(const std::vector<kiss_fft_cpx>& vfft_out)
 {
 
-    std::map<int, double> mPeaks;
+    std::vector<std::pair<int, double>> vPeaks;
+    vPeaks.reserve(vfft_out.size());
 
     double dLastBin(-800);
     int nPeaks(0);
@@ -208,7 +209,7 @@ std::map<int, double> GetPeaks(const std::vector<kiss_fft_cpx>& vfft_out)
             {
                 if(dLog > -80)
                 {
-                    mPeaks.insert(make_pair(i-1, dLastBin));
+                    vPeaks.push_back(std::make_pair(i-1, dLastBin));
                 }
             }
             bDown = true;
@@ -221,8 +222,9 @@ std::map<int, double> GetPeaks(const std::vector<kiss_fft_cpx>& vfft_out)
         dLastBin = dLog;
     }
 
-    return mPeaks;
+    std::sort(vPeaks.begin(), vPeaks.end(), [](const std::pair<int, double>& valueA, const std::pair<int, double>& valueB){ return valueA.second > valueB.second;});
 
+    return vPeaks;
 }
 
 
@@ -271,36 +273,15 @@ bool CheckForTone(std::vector<float> vBufferA, std::vector<float> vBufferB)
     free(cfgR);
 
 
-    std::map<int, double> mPeaksL(GetPeaks(vfft_outL));
-    std::map<int, double> mPeaksR(GetPeaks(vfft_outR));
+    auto vPeaksL = std::move(GetPeaks(vfft_outL));
+    auto vPeaksR = std::move(GetPeaks(vfft_outR));
 
-    if(mPeaksL.size() != 1 || mPeaksR.size() != 1)
+    if(vPeaksL.size() != 1 || vPeaksR.size() != 1)
     {
-        pmlLog(pml::LOG_DEBUG) << "CalculateHash\tCheckForTone - " << mPeaksL.size() << ", " << mPeaksR.size();
+        pmlLog(pml::LOG_DEBUG) << "CalculateHash\tCheckForTone - " << vPeaksL.size() << ", " << vPeaksR.size();
         return false;
     }
 
-    float dMaxL(-120.0);
-    float dMaxR(-120.0);
-    int nMaxL, nMaxR;
-
-    for(auto pairPeak : mPeaksL)
-    {
-        if(pairPeak.second > dMaxL)
-        {
-            nMaxL = pairPeak.first;
-        }
-    }
-
-    for(auto pairPeak : mPeaksR)
-    {
-        if(pairPeak.second > dMaxR)
-        {
-            nMaxR = pairPeak.first;
-        }
-    }
-
-    return (nMaxL == nMaxR);
+    return vPeaksL[0] == vPeaksR[0];
 }
-
 

@@ -78,18 +78,18 @@
 		<Unit filename="external/phash/ph_fft.h" />
 		<Unit filename="include/agentthread.h" />
 		<Unit filename="include/compi.h" />
-		<Unit filename="include/fftcompare.h" />
 		<Unit filename="include/hash.h" />
 		<Unit filename="include/inimanager.h" />
 		<Unit filename="include/inisection.h" />
 		<Unit filename="include/kiss_xcorr.h" />
 		<Unit filename="include/logtofile.h" />
 		<Unit filename="include/mibwritabletable.h" />
+		<Unit filename="include/minuscompare.h" />
 		<Unit filename="include/recorder.h" />
+		<Unit filename="include/troughcompare.h" />
 		<Unit filename="include/utils.h" />
 		<Unit filename="src/agentthread.cpp" />
 		<Unit filename="src/compi.cpp" />
-		<Unit filename="src/fftcompare.cpp" />
 		<Unit filename="src/hash.cpp" />
 		<Unit filename="src/inimanager.cpp" />
 		<Unit filename="src/inisection.cpp" />
@@ -99,8 +99,14 @@
 		<Unit filename="src/logtofile.cpp" />
 		<Unit filename="src/main.cpp" />
 		<Unit filename="src/mibwritabletable.cpp" />
+		<Unit filename="src/minuscompare.cpp" />
 		<Unit filename="src/recorder.cpp" />
+		<Unit filename="src/troughcompare.cpp" />
 		<Unit filename="src/utils.cpp" />
-		<Extensions />
+		<Extensions>
+			<code_completion />
+			<envvars />
+			<debugger />
+		</Extensions>
 	</Project>
 </CodeBlocks_project_file>

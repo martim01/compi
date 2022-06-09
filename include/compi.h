@@ -60,9 +60,14 @@ class Compi
         std::atomic<int> m_nMask;
         std::atomic<bool> m_bActive;
 
-        bool m_bMinus;
+        enum enumCheck {HASH, MINUS, FFT_DIFF};
+        enumCheck m_eCheck;
 
         bool m_bLocked;
+
+        double m_dFFTChangeDown;
+        double m_dFFTChangeUp;
+        size_t m_nFFTBands;
 
         enum { FORCE_OFF, FOLLOW_ACTIVE,FORCE_ON};
 };
