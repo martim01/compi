@@ -68,6 +68,7 @@ class Compi
         double m_dFFTChangeDown;
         double m_dFFTChangeUp;
         size_t m_nFFTBands;
+        double m_dFFTLimits;
 
         enum { FORCE_OFF, FOLLOW_ACTIVE,FORCE_ON};
 };

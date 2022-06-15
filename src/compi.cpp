@@ -33,7 +33,8 @@ Compi::Compi() :
     m_bLocked(false),
     m_dFFTChangeDown(0.05),
     m_dFFTChangeUp(0.1),
-    m_nFFTBands(20)
+    m_nFFTBands(20),
+    m_dFFTLimits(10.0)
 {
 
 }
@@ -201,7 +202,7 @@ void Compi::Loop()
                         result = CalculateMinus(buffer.first,buffer.second, m_pRecorder->GetPeak(), m_pRecorder->GetNumberOfSamplesToHash(), m_bLocked, result);
                         break;
                     case FFT_DIFF:
-                        result = CalculateFFTDiff(buffer.first,buffer.second, m_pRecorder->GetNumberOfSamplesToHash(), m_nFFTBands, m_dFFTChangeDown, m_dFFTChangeUp);
+                        result = CalculateFFTDiff(buffer.first,buffer.second, m_pRecorder->GetNumberOfSamplesToHash(), m_nFFTBands, m_dFFTLimits, m_dFFTChangeDown, m_dFFTChangeUp);
                         break;
                     default:
                         result = CalculateHash(buffer.first,buffer.second, m_pRecorder->GetNumberOfSamplesToHash(), m_bLocked);
@@ -293,9 +294,10 @@ int Compi::Run(const std::string& sPath)
         SetupRecorder();
 
 
-        m_dFFTChangeDown = m_iniConfig.GetIniDouble("FFT_Diff", "Down", 0.05);
-        m_dFFTChangeUp = m_iniConfig.GetIniDouble("FFT_Diff", "Up", 0.1);
-        m_nFFTBands = m_iniConfig.GetIniInt("FFT_Diff", "Bands", 20);
+        m_dFFTChangeDown = m_iniConfig.GetIniDouble("FFTDiff", "Down", 0.05);
+        m_dFFTChangeUp = m_iniConfig.GetIniDouble("FFTDiff", "Up", 0.1);
+        m_nFFTBands = m_iniConfig.GetIniInt("FFTDiff", "Bands", 20);
+        m_dFFTLimits = m_iniConfig.GetIniInt("FFTDiff", "Limits", 10.0);
 
         Loop();
 

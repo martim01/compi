@@ -39,7 +39,7 @@ std::vector<kiss_fft_cpx> DoFFT(std::vector<float>& buffer, unsigned int nBins)
 }
 
 
-std::vector<std::pair<size_t, float>> GetSpectrumDiff(std::vector<float>& bufferA, std::vector<float>& bufferB, unsigned long nSampleRate,unsigned int nBins)
+std::vector<std::pair<size_t, float>> GetSpectrumDiff(std::vector<float>& bufferA, std::vector<float>& bufferB, unsigned long nSampleRate,unsigned int nBins,double dLimits)
 {
     auto vfft_outA = DoFFT(bufferA, nBins);
     auto vfft_outB = DoFFT(bufferB, nBins);
@@ -63,7 +63,7 @@ std::vector<std::pair<size_t, float>> GetSpectrumDiff(std::vector<float>& buffer
         auto dLogB = 20*log10(dAmplitudeB);
 
         auto dDiff = abs(-dLogA+dLogB);
-        if(dDiff > 3.0 && dLogA > -80.0)
+        if(dDiff > dLimits && dLogA > -80.0)
         {
             vSpectrum.push_back({i, dDiff});
         }
@@ -130,7 +130,7 @@ std::vector<std::pair<int, double>>  GetTroughs(std::vector<float>& buffer, unsi
 //    return mTroughs;
 }
 
-hashresult CalculateFFTDiff(const std::deque<float>& bufferA, const std::deque<float>& bufferB, unsigned int nSampleSize, size_t nBands, double dChangeDown, double dChangeUp)
+hashresult CalculateFFTDiff(const std::deque<float>& bufferA, const std::deque<float>& bufferB, unsigned int nSampleSize, size_t nBands, double dLimits, double dChangeDown, double dChangeUp)
 {
     std::vector<float> vBufferA(std::begin(bufferA), std::end(bufferA));
     std::vector<float> vBufferB(std::begin(bufferB), std::end(bufferB));
@@ -196,7 +196,7 @@ hashresult CalculateFFTDiff(const std::deque<float>& bufferA, const std::deque<f
             }
 
 
-            auto vDiff = GetSpectrumDiff(vTempA, vTempB, 48000, nBins);
+            auto vDiff = GetSpectrumDiff(vTempA, vTempB, 48000, nBins, dLimits);
             pmlLog(pml::LOG_DEBUG) << "BANDS DIFF: " << vDiff.size();
 
             if(vDiff.size() < nBands)
