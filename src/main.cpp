@@ -5,6 +5,7 @@
 #include "agentthread.h"
 #include <execinfo.h>
 #include <unistd.h>
+#include "spectrumcompare.h"
 
 static void sig(int signo)
 {

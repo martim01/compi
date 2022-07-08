@@ -13,11 +13,13 @@ namespace Snmp_pp
 
 class AgentThread;
 class Recorder;
+class SpectrumCompare;
 
 class Compi
 {
     public:
         Compi();
+        ~Compi();
         int Run(const std::string& sPath);
 
         bool MaskCallback(Snmp_pp::SnmpSyntax* pValue, int nSyntax);
@@ -28,6 +30,7 @@ class Compi
         void SetupLogging();
         void SetupAgent();
         void SetupRecorder();
+        void SetupSpectrumComparitor();
         void Loop();
 
         void HandleNoLock();
@@ -70,5 +73,6 @@ class Compi
         size_t m_nFFTBands;
         double m_dFFTLimits;
 
+        std::unique_ptr<SpectrumCompare> m_pSpectrum = nullptr;
         enum { FORCE_OFF, FOLLOW_ACTIVE,FORCE_ON};
 };

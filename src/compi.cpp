@@ -12,7 +12,7 @@
 #include "utils.h"
 #include "minuscompare.h"
 #include "troughcompare.h"
-
+#include "spectrumcompare.h"
 
 Compi::Compi() :
     m_pAgent(nullptr),
@@ -35,6 +35,11 @@ Compi::Compi() :
     m_dFFTChangeUp(0.1),
     m_nFFTBands(20),
     m_dFFTLimits(10.0)
+{
+
+}
+
+Compi::~Compi()
 {
 
 }
@@ -93,9 +98,10 @@ void Compi::SetupRecorder()
     {
         m_eCheck = MINUS;
     }
-    else if(m_iniConfig.GetIniString("method", "check", "hash") == "fft")
+    else if(m_iniConfig.GetIniString("method", "check", "hash") == "spectrum")
     {
         m_eCheck = FFT_DIFF;
+        SetupSpectrumComparitor();
     }
 
 
@@ -113,6 +119,12 @@ void Compi::SetupRecorder()
     }
     m_pRecorder->Init();
 
+}
+
+void Compi::SetupSpectrumComparitor()
+{
+    m_pSpectrum = std::make_unique<SpectrumCompare>(m_nSampleRate, m_iniConfig.GetIniInt("Spectrum", "FramesForGood", 5000), m_iniConfig.GetIniInt("Spectrum", "FramesForCurrent", 5000),
+                                                    m_iniConfig.GetIniDouble("Spectrum", "MaxLevel", 3.0), m_iniConfig.GetIniInt("Spectrum", "MaxBands", 30));
 }
 
 void Compi::HandleNoLock()
@@ -175,7 +187,7 @@ void Compi::Loop()
         //work out how long to wait for before the buffer should be full
         bool bDone = m_pRecorder->GetConditionVariable().wait_for(lck, m_pRecorder->GetExpectedTimeToFillBuffer(), [this]{return m_pRecorder->BufferFull(); });
 
-        pmlLog(pml::LOG_DEBUG) << "MEMORY\t" << GetMemoryUsage();
+        pmlLog(pml::LOG_TRACE) << "MEMORY\t" << GetMemoryUsage();
         hashresult result{0,0.0};
         if(bDone)
         {
@@ -202,7 +214,7 @@ void Compi::Loop()
                         result = CalculateMinus(buffer.first,buffer.second, m_pRecorder->GetPeak(), m_pRecorder->GetNumberOfSamplesToHash(), m_bLocked, result);
                         break;
                     case FFT_DIFF:
-                        result = CalculateFFTDiff(buffer.first,buffer.second, m_pRecorder->GetNumberOfSamplesToHash(), m_nFFTBands, m_dFFTLimits, m_dFFTChangeDown, m_dFFTChangeUp);
+                        result = m_pSpectrum->AddAudio(buffer.first, buffer.second);
                         break;
                     default:
                         result = CalculateHash(buffer.first,buffer.second, m_pRecorder->GetNumberOfSamplesToHash(), m_bLocked);
@@ -223,7 +235,7 @@ void Compi::Loop()
                 m_pRecorder->CreateBuffer();    //have to create buffer so that we clear it out
                 m_nFailureCount = 0;
                 result = {0,1.0};
-                pmlLog(pml::LOG_DEBUG) << "Compi\tBoth channels silent";
+                pmlLog(pml::LOG_TRACE) << "Compi\tBoth channels silent";
 
 
             }

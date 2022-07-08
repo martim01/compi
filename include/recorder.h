@@ -75,6 +75,8 @@ class Recorder
 
         deinterlacedBuffer m_Buffer;
 
+        bool m_bAdjustDelayWindow;
+
         std::mutex m_mutex;
         std::mutex m_mutexInternal;
         std::condition_variable m_cv;

@@ -86,6 +86,7 @@
 		<Unit filename="include/mibwritabletable.h" />
 		<Unit filename="include/minuscompare.h" />
 		<Unit filename="include/recorder.h" />
+		<Unit filename="include/spectrumcompare.h" />
 		<Unit filename="include/troughcompare.h" />
 		<Unit filename="include/utils.h" />
 		<Unit filename="src/agentthread.cpp" />
@@ -101,6 +102,7 @@
 		<Unit filename="src/mibwritabletable.cpp" />
 		<Unit filename="src/minuscompare.cpp" />
 		<Unit filename="src/recorder.cpp" />
+		<Unit filename="src/spectrumcompare.cpp" />
 		<Unit filename="src/troughcompare.cpp" />
 		<Unit filename="src/utils.cpp" />
 		<Extensions>

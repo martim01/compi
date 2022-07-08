@@ -6,9 +6,15 @@
 #include "kiss_fft.h"
 #include "kiss_fftr.h"
 #include <algorithm>
-
+#include <numeric>
+#include <list>
 
 double g_confFFT = 0.0;
+unsigned int g_maxBands = 0;
+unsigned int g_minBands = 1024;
+std::list<size_t> g_lstAverage;
+double g_avBands = 0.0;
+
 
 std::vector<kiss_fft_cpx> DoFFT(std::vector<float>& buffer, unsigned int nBins)
 
@@ -138,16 +144,9 @@ hashresult CalculateFFTDiff(const std::deque<float>& bufferA, const std::deque<f
     unsigned int nBins = 512;
 
 
-//    pmlLog(pml::LOG_TRACE) << "CalculateTroughs\tCheck if tone";
-//    if(CheckForTone(vBufferA, vBufferB))
-//    {
-//        pmlLog(pml::LOG_TRACE) << "CalculateTroughs\tTONE";
-//        return std::make_pair(0, 1.0);
-//    }
-
     hashresult result = std::make_pair(0,-1.0);
 
-    pmlLog(pml::LOG_TRACE) << "CalculateFFTDiff\tGet Offset: Window size=" << nSampleSize;
+    pmlLog(pml::LOG_DEBUG) << "CalculateFFTDiff\tGet Offset: Window size=" << nSampleSize;
 
 
     size_t nOffsetA(0);
@@ -173,7 +172,7 @@ hashresult CalculateFFTDiff(const std::deque<float>& bufferA, const std::deque<f
         int nSamples(std::min(nSamplesA, nSamplesB));
 
         size_t nWindow = nBins*2;
-        pmlLog(pml::LOG_TRACE) << "CalculateFFTDiff\tComparing "<< nSamples << " samples [" << nSamplesA << "," << nSamplesB << "]";
+        pmlLog(pml::LOG_DEBUG) << "CalculateFFTDiff\tComparing "<< nSamples << " samples [" << nSamplesA << "," << nSamplesB << "]";
 
         if(nSamples > 0)
         {
@@ -197,9 +196,32 @@ hashresult CalculateFFTDiff(const std::deque<float>& bufferA, const std::deque<f
 
 
             auto vDiff = GetSpectrumDiff(vTempA, vTempB, 48000, nBins, dLimits);
-            pmlLog(pml::LOG_DEBUG) << "BANDS DIFF: " << vDiff.size();
 
-            if(vDiff.size() < nBands)
+            if(g_maxBands < vDiff.size())
+            {
+                g_maxBands = vDiff.size();
+                pmlLog(pml::LOG_DEBUG) << "Max Bands = " << g_maxBands;
+            }
+            if(g_minBands > vDiff.size())
+            {
+                g_minBands = vDiff.size();
+                pmlLog(pml::LOG_DEBUG) << "Min Bands = " << g_minBands;
+            }
+
+            g_lstAverage.push_back(vDiff.size());
+            if(g_lstAverage.size() > 60)
+            {
+                g_lstAverage.pop_front();
+            }
+
+            auto sum = std::accumulate(g_lstAverage.begin(), g_lstAverage.end(),0);
+            g_avBands = sum/static_cast<double>(g_lstAverage.size());
+
+
+            pmlLog(pml::LOG_DEBUG) << "BANDS AV: " << g_avBands;
+
+
+            if(g_avBands < nBands)
             {
                 g_confFFT = std::min(g_confFFT+dChangeUp, 1.0);
                 result.second = g_confFFT;

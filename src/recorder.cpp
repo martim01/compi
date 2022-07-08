@@ -29,7 +29,8 @@ m_nSamplesToHash((minWindow.count()*m_nSampleRate)/1000),
 m_peak({0.0,0.0}),
 m_nOffset(0),
 m_bLocked(false),
-m_bReady(true)
+m_bReady(true),
+m_bAdjustDelayWindow(m_nStartSamplesForDelay != m_nMaxSamplesForDelay)
 {
 
 }
@@ -45,7 +46,8 @@ m_nSamplesToHash((minWindow.count()*m_nSampleRate)/1000),
 m_peak({0.0,0.0}),
 m_nOffset(0),
 m_bLocked(false),
-m_bReady(true)
+m_bReady(true),
+m_bAdjustDelayWindow(m_nStartSamplesForDelay != m_nMaxSamplesForDelay)
 {
 }
 
@@ -253,7 +255,7 @@ void Recorder::CompiReady()
     std::lock_guard<std::mutex> lg(m_mutexInternal);
     m_peak.first = m_peak.second = 0.0;
     m_bReady = true;
-    pmlLog(pml::LOG_DEBUG) << "Recorder\tCompi Ready";
+    pmlLog(pml::LOG_TRACE) << "Recorder\tCompi Ready";
 }
 
 
@@ -280,7 +282,7 @@ size_t Recorder::Locked(bool bLocked, long nOffset)
         m_nSamplesForDelay = m_nStartSamplesForDelay;
         m_nOffset = nOffset;
     }
-    else if(!bLocked)
+    else if(!bLocked && m_bAdjustDelayWindow)
     {
         m_nSamplesForDelay = std::min(std::max(m_nSamplesForDelay, (size_t)m_nOffset)*2, m_nMaxSamplesForDelay);
 
