@@ -13,13 +13,15 @@ using nonInterlacedFFT = std::pair<std::vector<kiss_fft_cpx>, std::vector<kiss_f
 class SpectrumCompare
 {
     public:
-        SpectrumCompare(unsigned long nSampleRate,unsigned long nFramesForGood, unsigned long nFramesForCurrent, double dMaxAllowedLevelDiff, unsigned long nMaxAllowedBandsDiff);
+        SpectrumCompare(const std::string& sProfileFile, unsigned long nSampleRate,unsigned long nFramesForGood, unsigned long nFramesForCurrent, double dMaxAllowedLevelDiff, unsigned long nMaxAllowedBandsDiff);
         ~SpectrumCompare();
 
         hashresult AddAudio(const std::deque<float>& bufferA, const std::deque<float>& bufferB);
 
     private:
 
+        void LoadProfileFile();
+        void SaveProfileFile();
         void ProcessAudio();
         void CalculateChannelOffset();
         void CalculateSpectrum(std::vector<float>& vSpectrum);
@@ -27,6 +29,8 @@ class SpectrumCompare
         unsigned long CompareSpectrums();
 
         void CheckGoLive();
+
+        std::string m_sProfileFile;
 
         bool m_bOneShot = true;
         bool m_bCalculated = false;
@@ -52,4 +56,8 @@ class SpectrumCompare
         nonInterlacedList m_Buffer;
 
         hashresult m_result;
+
+
+
+        static const size_t BINS = 1024;
 };

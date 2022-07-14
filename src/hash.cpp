@@ -175,7 +175,7 @@ int CalculateOffset(std::vector<float> vBufferA, std::vector<float> vBufferB)
         offset = offset - nBlockSize;
     }
 
-    pmlLog(pml::LOG_DEBUG) << "CalculateHash\tOffset=" << offset << " samples";
+    pmlLog(pml::LOG_DEBUG) << "CalculateOffset=" << offset << " samples";
 
     return offset;
 }

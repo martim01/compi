@@ -123,7 +123,8 @@ void Compi::SetupRecorder()
 
 void Compi::SetupSpectrumComparitor()
 {
-    m_pSpectrum = std::make_unique<SpectrumCompare>(m_nSampleRate, m_iniConfig.GetIniInt("Spectrum", "FramesForGood", 5000), m_iniConfig.GetIniInt("Spectrum", "FramesForCurrent", 5000),
+    m_pSpectrum = std::make_unique<SpectrumCompare>(m_iniConfig.GetIniString("Spectrum", "Profile", "/usr/local/etc/profile"),
+                                                    m_nSampleRate, m_iniConfig.GetIniInt("Spectrum", "FramesForGood", 5000), m_iniConfig.GetIniInt("Spectrum", "FramesForCurrent", 5000),
                                                     m_iniConfig.GetIniDouble("Spectrum", "MaxLevel", 3.0), m_iniConfig.GetIniInt("Spectrum", "MaxBands", 30));
 }
 

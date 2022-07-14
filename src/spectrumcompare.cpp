@@ -1,19 +1,23 @@
 #include "spectrumcompare.h"
 #include "hash.h"
 #include "log.h"
+#include <fstream>
 
-
-SpectrumCompare::SpectrumCompare(unsigned long nSampleRate,unsigned long nFramesForGood, unsigned long nFramesForCurrent, double dMaxAllowedLevelDiff, unsigned long nMaxAllowedBandsDiff) :
+SpectrumCompare::SpectrumCompare(const std::string& sProfileFile, unsigned long nSampleRate,unsigned long nFramesForGood, unsigned long nFramesForCurrent, double dMaxAllowedLevelDiff, unsigned long nMaxAllowedBandsDiff) :
+    m_sProfileFile(sProfileFile),
     m_nSampleRate(nSampleRate),
     m_dFramesForGood(nFramesForGood),
     m_dFramesForCurrent(nFramesForCurrent),
     m_dMaxLevel(dMaxAllowedLevelDiff),
     m_nMaxBands(nMaxAllowedBandsDiff),
-    m_vSpectrumGood(1024, 0.0),
-    m_vSpectrumCurrent(1024,0.0), m_result{0,0.0}
+    m_vSpectrumGood(BINS, 0.0),
+    m_vSpectrumCurrent(BINS,0.0), m_result{0,0.0}
+
 {
-    m_fftOut.first.resize(1024);
-    m_fftOut.second.resize(1024);
+    m_fftOut.first.resize(BINS);
+    m_fftOut.second.resize(BINS);
+
+    LoadProfileFile();
 }
 
 SpectrumCompare::~SpectrumCompare()
@@ -45,7 +49,8 @@ void SpectrumCompare::ProcessAudio()
 {
     unsigned long nMaxBands = 0;
 
-    while(m_Buffer.first.size() > (m_fftOut.first.size()-1)*2)
+    pmlLog(pml::LOG_DEBUG) << "SpectrumCompare::ProcessAudio: " << m_Buffer.first.size() << ", " << m_Buffer.second.size() << "\t" << m_dTotalFrames;
+    while(std::min(m_Buffer.first.size(), m_Buffer.second.size()) > (m_fftOut.first.size()-1)*2)
     {
         if(!m_bLive)
         {
@@ -66,14 +71,14 @@ void SpectrumCompare::ProcessAudio()
 
                 if(nMaxBands <= m_nMaxBands)
                 {
-                    m_result.second = 1.0;
+                    m_result.second = std::min(1.0, m_result.second+0.3);
                 }
                 else
                 {
-                    m_result.second = 0.0;
+                    m_result.second = std::max(0.0, m_result.second-0.3);
                 }
 
-                m_vSpectrumCurrent = std::vector<float>(1024,0.0);
+                m_vSpectrumCurrent = std::vector<float>(BINS,0.0);
                 m_dTotalFrames = 0.0;
             }
         }
@@ -96,7 +101,7 @@ void SpectrumCompare::CalculateSpectrum(std::vector<float>& vSpectrum)
         auto dAmplitudeA = abs(sqrt( (m_fftOut.first[i].r*m_fftOut.first[i].r) + (m_fftOut.first[i].i*m_fftOut.first[i].i)))/static_cast<float>(m_fftOut.first.size());
         auto dAmplitudeB = abs(sqrt( (m_fftOut.second[i].r*m_fftOut.second[i].r) + (m_fftOut.second[i].i*m_fftOut.second[i].i)))/static_cast<float>(m_fftOut.second.size());
 
-        if(dAmplitudeA > 0.00003 && dAmplitudeB > 0.00003)
+        if(dAmplitudeA > 0.00003 && dAmplitudeB > 0.00003)  //works out at about -68dB
         {
             float dLogA = (20*log10(dAmplitudeA))* 0.754;
             float dLogB = (20*log10(dAmplitudeB))* 0.754;
@@ -193,10 +198,76 @@ void SpectrumCompare::CheckGoLive()
     if(m_dTotalFrames > m_dFramesForGood)
     {
         pmlLog(pml::LOG_INFO) << "SpectrumCompare\tGoLive";
+        SaveProfileFile();
         m_bLive = true;
         m_dTotalFrames = 0;
         m_bCalculated = false;
         m_Buffer.first.clear();
         m_Buffer.second.clear();
+    }
+}
+
+
+void SpectrumCompare::LoadProfileFile()
+{
+    pmlLog(pml::LOG_WARN) << "SpectrumCompare\tAttempt to load profile file " << m_sProfileFile;
+    std::ifstream ifs;
+    ifs.open(m_sProfileFile);
+    bool bSuccess(true);
+    if(ifs.is_open())
+    {
+        m_vSpectrumGood.clear();
+        std::string sLine;
+        while(!ifs.eof())
+        {
+            getline(ifs,sLine,'\n');
+            if(sLine.empty() == false)
+            {
+                try
+                {
+                    m_vSpectrumGood.push_back(std::stod(sLine));
+                }
+                catch(...)
+                {
+                    pmlLog(pml::LOG_WARN) << "SpectrumCompare\tProfile file invalid - can't convert all entries '" << sLine << "'Create new one...";
+                    bSuccess = false;
+                    break;
+                }
+            }
+        }
+        if(m_vSpectrumGood.size() != BINS || !bSuccess)
+        {
+            pmlLog(pml::LOG_WARN) << "SpectrumCompare\tProfile file invalid - incorrect number of entroes. Create new one...";
+            m_vSpectrumGood = std::vector<float>(1024,0.0);
+        }
+        else
+        {
+            pmlLog() << "SpectrumCompare\tLoaded spectrum profile file. Go Live";
+            m_bLive = true;
+
+        }
+    }
+    else
+    {
+        pmlLog(pml::LOG_WARN) << "SpectrumCompare\tProfile file invalid - could not open. Create new one...";
+    }
+}
+
+void SpectrumCompare::SaveProfileFile()
+{
+    std::ofstream ofs;
+    ofs.open(m_sProfileFile);//, std::ios_base::out | std::ios_base::trunc);
+    if(ofs.is_open())
+    {
+        for(const auto& value : m_vSpectrumGood)
+        {
+            ofs << value << "\n";
+        }
+        ofs.close();
+        pmlLog() << "SpectrumCompare\tProfile file saved";
+    }
+    else
+    {
+        pmlLog(pml::LOG_WARN) << "SpectrumCompare\tProfile file - failed to save.";
     }
 }
